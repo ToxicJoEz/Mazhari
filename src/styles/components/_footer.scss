@@ -1,0 +1,143 @@
+@import '../variables';
+
+.footer-container {
+  background-color: $bg-surface;
+  color: $text-primary;
+  padding-top: 5rem;
+  padding-bottom: 2.5rem;
+  border-top: 1px solid $border-color;
+}
+
+.footer-inner {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $spacing-md;
+  padding-right: $spacing-md;
+  
+  @media (max-width: 768px) {
+    padding-left: $spacing-sm;
+    padding-right: $spacing-sm;
+  }
+}
+
+.footer-grid {
+  gap: 3.5rem;
+  margin-bottom: 4.5rem;
+}
+
+.brand-section {
+  .logo {
+    font-size: 1.5rem;
+    font-family: $font-display;
+    letter-spacing: 0.22em;
+    font-weight: 300;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+    color: $accent-color;
+  }
+  
+  .brand-desc {
+    color: $text-secondary;
+    font-size: 0.9375rem;
+    line-height: 1.75;
+    max-width: 24rem;
+    margin-bottom: 1.75rem;
+    font-weight: 300;
+  }
+
+  .subscribe-form {
+    border: 1px solid $border-color;
+    border-radius: $radius-full;
+    padding: 0.35rem 0.35rem 0.35rem 1.25rem;
+    max-width: 26rem;
+    background-color: rgba(255, 255, 255, 0.02);
+    transition: $transition-soft;
+    
+    &:focus-within {
+      border-color: $accent-color;
+      box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
+    }
+    
+    input {
+      background-color: transparent;
+      border: none;
+      outline: none;
+      font-size: 0.875rem;
+      color: $text-primary;
+      
+      &::placeholder {
+        color: $text-muted;
+      }
+    }
+    
+    button {
+      letter-spacing: 0.04em;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.625rem 1.25rem;
+      border-radius: $radius-full;
+      background-color: $accent-soft;
+      color: $accent-color;
+      transition: $transition-soft;
+      
+      &:hover {
+        background-color: $accent-color;
+        color: #0b0b0e;
+        box-shadow: $shadow-glow;
+      }
+    }
+  }
+}
+
+.links-section {
+  h3 {
+    letter-spacing: 0.05em;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    color: $text-primary;
+  }
+  
+  ul {
+    font-size: 0.875rem;
+    color: $text-secondary;
+    
+    li {
+      margin-bottom: 0.625rem;
+    }
+    
+    a {
+      transition: $transition-soft;
+      
+      &:hover {
+        color: $accent-color;
+        padding-left: 0.25rem;
+      }
+    }
+  }
+}
+
+.footer-bottom {
+  border-top: 1px solid $border-color;
+  padding-top: 2rem;
+  font-size: 0.8125rem;
+  color: $text-muted;
+  letter-spacing: 0.02em;
+  
+  .social-links {
+    gap: 1.5rem;
+    margin-top: 1rem;
+    
+    @media (min-width: 768px) {
+      margin-top: 0;
+    }
+    
+    a {
+      transition: $transition-soft;
+      &:hover {
+        color: $accent-color;
+      }
+    }
+  }
+}

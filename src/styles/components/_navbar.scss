@@ -1,0 +1,186 @@
+@import '../variables';
+
+.navbar {
+  // Semi-transparent dark tinted glass so links are always 100% visible
+  background-color: rgba(11, 11, 14, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  
+  &.scrolled,
+  &:not(.transparent) {
+    background-color: rgba(11, 11, 14, 0.94);
+    border-bottom: 1px solid $border-color;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+  }
+
+  &.transparent {
+    background-color: rgba(11, 11, 14, 0.75);
+  }
+}
+
+.nav-container {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $spacing-md;
+  padding-right: $spacing-md;
+  
+  @media (max-width: 768px) {
+    padding-left: $spacing-sm;
+    padding-right: $spacing-sm;
+  }
+}
+
+.nav-inner {
+  height: 5.25rem;
+}
+
+.nav-links {
+  .nav-link {
+    font-size: 0.8125rem;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    color: $text-secondary;
+    position: relative;
+    padding: 0.35rem 0.15rem;
+    transition: $transition-soft;
+    
+    &:hover {
+      color: $text-primary;
+    }
+
+    &.active {
+      color: $text-primary;
+      font-weight: 600;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: $accent-color;
+        border-radius: $radius-full;
+        box-shadow: 0 0 8px $accent-color;
+      }
+    }
+  }
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-family: $font-display;
+  letter-spacing: 0.22em;
+  font-weight: 300;
+  text-transform: uppercase;
+  color: $text-primary;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  &:hover {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+.auth-btn {
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $text-primary;
+  border: 1px solid $border-color;
+  padding: 0.5rem 1.25rem;
+  border-radius: $radius-full;
+  background-color: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  transition: $transition-soft;
+
+  &:hover {
+    border-color: $accent-color;
+    color: $accent-color;
+    background-color: $accent-soft;
+    box-shadow: $shadow-glow;
+  }
+}
+
+.menu-btn, .cart-btn {
+  color: $text-primary;
+  padding: 0.5rem;
+  border-radius: $radius-full;
+  transition: $transition-soft;
+  
+  &:hover {
+    color: $accent-color;
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+}
+
+.badge {
+  background-color: $accent-color;
+  color: #0b0b0e !important;
+  font-size: 0.7rem;
+  border-radius: $radius-full;
+  height: 1.125rem;
+  width: 1.125rem;
+  top: -0.25rem;
+  right: -0.25rem;
+  font-weight: 700;
+  box-shadow: $shadow-glow;
+}
+
+.mobile-menu {
+  background-color: rgba(19, 19, 26, 0.96);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid $border-color;
+  padding: 1.5rem 1.75rem 2rem;
+  border-bottom-left-radius: $radius-xl;
+  border-bottom-right-radius: $radius-xl;
+  box-shadow: $shadow-lg;
+
+  .mobile-link {
+    font-size: 0.9375rem;
+    letter-spacing: 0.05em;
+    color: $text-secondary;
+    padding: 0.625rem 0.5rem;
+    border-radius: $radius-md;
+    transition: $transition-soft;
+
+    &:hover, &.active {
+      color: $text-primary;
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+    
+    &.active {
+      color: $accent-color;
+      font-weight: 600;
+    }
+  }
+
+  .mobile-divider {
+    height: 1px;
+    background-color: $border-color;
+    margin: 0.75rem 0;
+  }
+
+  .mobile-auth-btn {
+    letter-spacing: 0.05em;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.875rem;
+    border: 1px solid $border-color;
+    border-radius: $radius-full;
+    color: $text-primary;
+    background-color: rgba(255, 255, 255, 0.03);
+    transition: $transition-soft;
+
+    &:hover {
+      border-color: $accent-color;
+      color: $accent-color;
+      background-color: $accent-soft;
+      box-shadow: $shadow-glow;
+    }
+  }
+}
