@@ -2,39 +2,53 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-// import mongoose from 'mongoose';
+import connectDB, { checkDBStatus } from './config/db.js';
+
+// Route Handlers
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import productRoutes from './routes/products.js';
+import cartRoutes from './routes/cart.js';
 import orderRoutes from './routes/orders.js';
+import adminRoutes from './routes/admin.js';
+
+// Error Handling Middleware
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
 
 const app = express();
 
-// Middleware
+// Security and utility middleware
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Database Connection Scaffold (Commented out until MongoDB Atlas is set up)
-/*
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) return;
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("MongoDB connected");
-  } catch (error) {
-    console.error("MongoDB connection error:", error);
-  }
-};
+// Initialize Database connection (Graceful fallback if MONGODB_URI is pending)
 connectDB();
-*/
 
-// Routes
+// API Modules
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Mazhari API is running.' });
+  const db = checkDBStatus();
+  res.status(200).json({
+    status: 'ok',
+    service: 'Mazhari Luxury E-Commerce API',
+    database: db.state,
+    timestamp: new Date().toISOString(),
+  });
 });
+
+// 404 and global error handlers
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
@@ -44,5 +58,5 @@ if (!process.env.VERCEL) {
   });
 }
 
-// Export the Express app for Vercel Serverless
+// Export for Vercel serverless function execution
 export default app;

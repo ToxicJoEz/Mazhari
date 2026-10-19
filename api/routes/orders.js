@@ -1,31 +1,24 @@
 import express from 'express';
-// import Order from '../models/Order.js'; // Will be used when DB is connected
+import {
+  createOrder,
+  getMyOrders,
+  getOrderById,
+  cancelOrder,
+} from '../controllers/orderController.js';
+import { verifyToken, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// GET all orders (For Admin Dashboard)
-router.get('/', async (req, res) => {
-  try {
-    // const orders = await Order.find().sort({ createdAt: -1 });
-    res.status(200).json({ message: "Fetch all orders - DB not yet connected" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// Create COD order (guest or authenticated)
+router.post('/', optionalAuth, createOrder);
 
-// POST new order (From Checkout Form)
-router.post('/', async (req, res) => {
-  try {
-    const orderData = req.body;
-    // const newOrder = new Order(orderData);
-    // await newOrder.save();
-    
-    // Here we will eventually trigger WhatsApp/Email notification to Admin
-    
-    res.status(201).json({ message: "Order received successfully", data: orderData });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// Customer view their own orders
+router.get('/my-orders', verifyToken, getMyOrders);
+
+// View single order (guest with orderNumber, owner, or admin)
+router.get('/:id', optionalAuth, getOrderById);
+
+// Cancel order
+router.post('/:id/cancel', verifyToken, cancelOrder);
 
 export default router;
