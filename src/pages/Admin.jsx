@@ -42,7 +42,7 @@ function useAction(refresh) {
   }
   return { busy, error, notice, run };
 }
-function SearchBar({ onSearch, placeholder = 'Searchâ€¦', children }) {
+function SearchBar({ onSearch, placeholder = 'Search…', children }) {
   return (
     <form
       className="admin-toolbar"
@@ -393,7 +393,7 @@ function ProductForm({ product, token, onSaved, onClose }) {
         </button>
         <Notice {...action} />
         <button className="btn" disabled={action.busy}>
-          {action.busy ? 'Savingâ€¦' : 'Save product'}
+          {action.busy ? 'Saving…' : 'Save product'}
         </button>
       </form>
     </Modal>
@@ -463,7 +463,7 @@ function Products({ token }) {
                       <div>
                         <strong>{p.title}</strong>
                         <small>
-                          {p.category} Â· {p.variants.length} variants
+                          {p.category} · {p.variants.length} variants
                         </small>
                       </div>
                     </div>
@@ -788,7 +788,7 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
         <>
           <h3>{r.data.user.name}</h3>
           <p>
-            {r.data.user.email} Â· {r.data.user.mobile}
+            {r.data.user.email} · {r.data.user.mobile}
           </p>
           {r.data.user.role !== 'admin' && (
             <>
@@ -854,7 +854,7 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
                     />
                   </label>
                   <label className="check">
-                    <input type="checkbox" required />I have verified the customerâ€™s identity.
+                    <input type="checkbox" required />I have verified the customer’s identity.
                   </label>
                   <button className="btn secondary" disabled={action.busy}>
                     Set temporary password
@@ -1060,7 +1060,7 @@ function ResetDialog({ request, token, onClose, onSaved }) {
           <textarea name="adminNotes" required maxLength={1000} />
         </label>
         <label className="check">
-          <input type="checkbox" required />I have verified this customerâ€™s identity.
+          <input type="checkbox" required />I have verified this customer’s identity.
         </label>
         <Notice {...a} />
         <button className="btn" disabled={a.busy}>
@@ -1313,7 +1313,7 @@ function StoreSettingsForm({ initial, token, shipping }) {
       )}
       <Notice {...a} />
       <button className="btn align-start" disabled={a.busy}>
-        {a.busy ? 'Savingâ€¦' : shipping ? 'Save delivery rates' : 'Save store settings'}
+        {a.busy ? 'Saving…' : shipping ? 'Save delivery rates' : 'Save store settings'}
       </button>
     </form>
   );

@@ -14,7 +14,7 @@ const schema = new mongoose.Schema(
     supportEmail: { type: String, default: '' },
     supportPhone: { type: String, default: '' },
     whatsapp: { type: String, default: '' },
-    announcement: { type: String, default: 'Cash on delivery Â· Across Egypt Â· Prices in EGP' },
+    announcement: { type: String, default: 'Cash on delivery · Across Egypt · Prices in EGP' },
     shippingRates: {
       type: [
         {
