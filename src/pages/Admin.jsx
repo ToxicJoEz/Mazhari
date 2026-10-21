@@ -403,9 +403,17 @@ function Products({ token }) {
   const [query, setQuery] = useState(''),
     [page, setPage] = useState(1),
     [status, setStatus] = useState(''),
+    [category, setCategory] = useState(''),
     [editing, setEditing] = useState(null);
   const resource = useResource(
-    '/admin/products?page=' + page + '&search=' + encodeURIComponent(query) + '&status=' + status,
+    '/admin/products?page=' +
+      page +
+      '&search=' +
+      encodeURIComponent(query) +
+      '&status=' +
+      status +
+      '&category=' +
+      encodeURIComponent(category),
     token,
   );
   const action = useAction(resource.refresh);
@@ -428,6 +436,21 @@ function Products({ token }) {
         placeholder="Search product names"
       >
         <select
+          aria-label="Collection"
+          value={category}
+          onChange={(e) => {
+            setCategory(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All collections</option>
+          {resource.data?.collections?.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+        <select
           aria-label="Product status"
           value={status}
           onChange={(e) => {
@@ -443,100 +466,86 @@ function Products({ token }) {
       <Notice {...action} />
       <Status {...resource} retry={resource.refresh} />
       {resource.data?.products.length > 0 ? (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Price</th>
-                <th>Available stock</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {resource.data.products.map((p) => (
-                <tr key={p._id}>
-                  <td>
-                    <div className="table-product">
-                      <img src={p.images[0] || '/images/product.svg'} alt="" />
-                      <div>
-                        <strong>{p.title}</strong>
-                        <small>
-                          {p.category} · {p.variants.length} variants
-                        </small>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{money(p.basePrice)}</td>
-                  <td>
-                    <strong>{p.variants.reduce((n, v) => n + v.stock, 0)}</strong>
-                    <small>
-                      {p.variants.filter((v) => v.stock <= 3).length} variants low / out
-                    </small>
-                  </td>
-                  <td>
-                    <span className="badge">
-                      {p.isDeleted ? 'Deleted' : p.isActive ? 'Published' : 'Draft'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="row">
-                      <button className="text-link" onClick={() => setEditing(p)}>
-                        Edit
-                      </button>
-                      {p.isDeleted ? (
-                        <button
-                          className="text-link"
-                          disabled={action.busy}
-                          onClick={() =>
-                            action.run(
-                              () =>
-                                apiRequest('/admin/products/' + p._id + '/restore', {
-                                  token,
-                                  method: 'PATCH',
-                                }),
-                              'Product restored.',
-                            )
-                          }
-                        >
-                          Restore
-                        </button>
-                      ) : (
-                        <button
-                          className="text-link danger"
-                          disabled={action.busy}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                'Remove this product from the store? You can restore it later.',
-                              )
-                            )
-                              action.run(
-                                () =>
-                                  apiRequest('/admin/products/' + p._id, {
-                                    token,
-                                    method: 'DELETE',
-                                  }),
-                                'Product soft-deleted.',
-                              );
-                          }}
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="admin-product-grid">
+          {resource.data.products.map((p) => (
+            <article className="admin-product-card" key={p._id}>
+              <div className="admin-product-photo">
+                <img src={p.images[0] || '/images/product.svg'} alt={p.title} loading="lazy" />
+                <span className="badge">
+                  {p.isDeleted ? 'Deleted' : p.isActive ? 'Published' : 'Draft'}
+                </span>
+              </div>
+              <div className="admin-product-info">
+                <span className="eyebrow">{p.category}</span>
+                <h2>{p.title}</h2>
+                <strong className="admin-product-price">{money(p.basePrice)}</strong>
+                <div className="admin-product-stock">
+                  <span>
+                    <strong>{p.variants.reduce((n, v) => n + v.stock, 0)}</strong> in stock
+                  </span>
+                  <span>{p.variants.length} variants</span>
+                </div>
+                <p className="muted small">
+                  {p.variants.filter((v) => v.stock <= 3).length} variants low / out
+                </p>
+                <div className="admin-product-actions">
+                  <button className="text-link" onClick={() => setEditing(p)}>
+                    Edit
+                  </button>
+                  {p.isDeleted ? (
+                    <button
+                      className="text-link"
+                      disabled={action.busy}
+                      onClick={() =>
+                        action.run(
+                          () =>
+                            apiRequest('/admin/products/' + p._id + '/restore', {
+                              token,
+                              method: 'PATCH',
+                            }),
+                          'Product restored.',
+                        )
+                      }
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <button
+                      className="text-link danger"
+                      disabled={action.busy}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            'Remove this product from the store? You can restore it later.',
+                          )
+                        )
+                          action.run(
+                            () =>
+                              apiRequest('/admin/products/' + p._id, {
+                                token,
+                                method: 'DELETE',
+                              }),
+                            'Product soft-deleted.',
+                          );
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
       ) : (
         !resource.loading &&
         !resource.error && (
-          <Empty title="No products yet.">
-            <p>Add your first piece with its price, sizes, colors and available stock.</p>
+          <Empty title={query || category || status ? 'No matching products.' : 'No products yet.'}>
+            <p>
+              {query || category || status
+                ? 'Try another search, collection, or status.'
+                : 'Add your first piece with its price, sizes, colors and available stock.'}
+            </p>
           </Empty>
         )
       )}

@@ -345,6 +345,30 @@ test('admin product creation, editing and draft visibility use validated variant
   assert.equal(r.data.product.basePrice, 567.8);
 });
 
+test('admin collection filtering combines search and status and keeps catalog-wide options', async () => {
+  let r = await api('/admin/products?category=QA&limit=1', { token: adminToken });
+  assert.equal(r.status, 200);
+  assert.equal(r.data.total, 1);
+  assert.equal(r.data.products.length, 1);
+  assert.equal(r.data.products[0].category, 'QA');
+  assert.ok(r.data.collections.includes('QA Fixtures'));
+  assert.ok(r.data.collections.includes('QA'));
+  r = await api('/admin/products?category=QA&search=does-not-exist', { token: adminToken });
+  assert.equal(r.data.total, 0);
+  assert.ok(r.data.collections.includes('QA'));
+  r = await api('/admin/products?category=QA&status=deleted', { token: adminToken });
+  assert.equal(r.data.total, 0);
+  r = await api('/admin/products?category=QA%20Fixtures&status=active&limit=1&page=2', {
+    token: adminToken,
+  });
+  assert.equal(r.status, 200);
+  assert.ok(r.data.total >= 2);
+  assert.equal(r.data.products.length, 1);
+  assert.equal(r.data.products[0].category, 'QA Fixtures');
+  r = await api('/admin/products?category=QA.*', { token: adminToken });
+  assert.equal(r.data.total, 0);
+});
+
 test('tampered totals roll back inventory and a valid COD order is durable and idempotent', async () => {
   const body = bodyFor(product, 2);
   let r = await api('/orders', {

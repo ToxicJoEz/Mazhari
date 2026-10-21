@@ -1867,3 +1867,70 @@ td strong {
   object-fit: cover;
   border-radius: 6px;
 }
+
+.admin-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 24px;
+}
+.admin-product-card {
+  overflow: hidden;
+  border: 1px solid #302a32;
+  border-radius: 12px;
+  background: #141216;
+  display: flex;
+  flex-direction: column;
+}
+.admin-product-photo {
+  position: relative;
+  background: #e6dfd6;
+}
+.admin-product-photo > img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4/5;
+  object-fit: cover;
+}
+.admin-product-photo .badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: #141216;
+  color: #fff;
+}
+.admin-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  flex: 1;
+}
+.admin-product-info .eyebrow {
+  font-size: 10px;
+}
+.admin-product-info h2 {
+  font-size: 20px;
+  margin: 0;
+  line-height: 1.35;
+}
+.admin-product-price {
+  color: #f5b4d2;
+  font-size: 18px;
+}
+.admin-product-stock {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.admin-product-info p {
+  margin: 0;
+}
+.admin-product-actions {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #302a32;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}

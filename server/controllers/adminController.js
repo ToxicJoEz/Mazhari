@@ -175,14 +175,23 @@ export const getAllProductsAdmin = async (req, res) => {
   if (req.query.status === 'deleted') q.isDeleted = true;
   if (req.query.search)
     q.title = new RegExp(v.escapeRegex(String(req.query.search).slice(0, 100)), 'i');
-  const [products, total] = await Promise.all([
+  if (req.query.category) q.category = v.text(req.query.category, 'collection', 80);
+  const [products, total, categories] = await Promise.all([
     Product.find(q)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
     Product.countDocuments(q),
+    Product.distinct('category'),
   ]);
-  res.json({ success: true, products, total, page, pages: Math.ceil(total / limit) });
+  res.json({
+    success: true,
+    products,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+    collections: categories.filter(Boolean).sort((a, b) => a.localeCompare(b)),
+  });
 };
 export const productData = (body) => {
   if (!Array.isArray(body.variants) || !body.variants.length || body.variants.length > 200)
