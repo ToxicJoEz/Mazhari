@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /admin
+Disallow: /profile
+Disallow: /orders
+Disallow: /checkout
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /restore-account
+Disallow: /track

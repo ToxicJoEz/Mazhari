@@ -6,7 +6,7 @@ const ProductVariantSchema = new mongoose.Schema(
     size: { type: String, required: true },
     stock: { type: Number, required: true, default: 0, min: 0 },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const ProductSchema = new mongoose.Schema(
@@ -16,6 +16,9 @@ const ProductSchema = new mongoose.Schema(
       required: [true, 'Product title is required'],
       trim: true,
     },
+    material: { type: String, default: '' },
+    care: { type: String, default: '' },
+    featured: { type: Boolean, default: false },
     description: {
       type: String,
       default: '',
@@ -70,7 +73,7 @@ const ProductSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes for fast storefront search and filtering

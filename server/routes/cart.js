@@ -1,23 +1,11 @@
-import express from 'express';
-import {
-  getCart,
-  addItem,
-  updateItem,
-  removeItem,
-  clearCart,
-  syncCart,
-} from '../controllers/cartController.js';
+import { Router } from 'express';
 import { verifyToken } from '../middleware/authMiddleware.js';
-
-const router = express.Router();
-
-router.use(verifyToken);
-
-router.get('/', getCart);
-router.post('/items', addItem);
-router.put('/items/:itemId', updateItem);
-router.delete('/items/:itemId', removeItem);
-router.delete('/', clearCart);
-router.post('/sync', syncCart);
-
-export default router;
+import { route } from '../utils/validation.js';
+import * as c from '../controllers/cartController.js';
+const r = Router();
+r.use(verifyToken);
+r.get('/', route(c.getCart));
+r.put('/', route(c.saveCart));
+r.post('/sync', route(c.syncCart));
+r.delete('/', route(c.clearCart));
+export default r;

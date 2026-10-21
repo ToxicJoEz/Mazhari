@@ -19,13 +19,14 @@ const UserSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Please provide a password'],
-      minlength: [6, 'Password must be at least 6 characters'],
+      minlength: [8, 'Password must be at least 8 characters'],
     },
     mobile: {
       type: String,
       required: [true, 'Please provide a contact phone number for delivery confirmation'],
       trim: true,
     },
+    tokenVersion: { type: Number, default: 0 },
     role: {
       type: String,
       enum: ['customer', 'admin'],
@@ -51,6 +52,7 @@ const UserSchema = new mongoose.Schema(
       {
         street: { type: String, required: true },
         city: { type: String, required: true },
+        governorate: { type: String, default: '' },
         zip: { type: String, default: '' },
         isDefault: { type: Boolean, default: false },
       },
@@ -58,7 +60,7 @@ const UserSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Hash password before saving

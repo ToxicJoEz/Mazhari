@@ -1,309 +1,127 @@
+import mongoose from 'mongoose';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
-import { checkDBStatus } from '../config/db.js';
-
-/**
- * Get active shopping bag for authenticated user
- * GET /api/cart
- */
+import * as v from '../utils/validation.js';
+export const normalizeItems = async (items, { session, strict = true } = {}) => {
+  if (!Array.isArray(items) || items.length > 60)
+    v.fail(400, 'A bag can contain up to 30 different selections.');
+  const merged = new Map();
+  for (const raw of items) {
+    const productId = v.objectId(
+      raw.productId || (raw.product?._id || raw.product)?.toString() || raw.id,
+    );
+    const color = v.text(raw.color, 'color', 80),
+      size = v.text(raw.size, 'size', 30),
+      qty = v.quantity(raw.quantity);
+    const key = productId + '|' + color + '|' + size;
+    if (merged.has(key)) {
+      const total = merged.get(key).quantity + qty;
+      merged.get(key).quantity = strict ? v.quantity(total) : Math.min(total, 50);
+    } else merged.set(key, { productId, color, size, quantity: qty });
+  }
+  if (merged.size > 30) v.fail(400, 'A bag can contain up to 30 different selections.');
+  const result = [];
+  const warnings = [];
+  for (const item of merged.values()) {
+    let query = Product.findOne({ _id: item.productId, isActive: true, isDeleted: false });
+    if (session) query = query.session(session);
+    const product = await query;
+    const variant = product?.variants.find((a) => a.size === item.size && a.color === item.color);
+    if (!product || !variant || variant.stock < 1) {
+      if (strict) v.fail(409, 'One of your selections is no longer available. Refresh your bag.');
+      warnings.push('An unavailable selection was removed from your bag.');
+      continue;
+    }
+    let qty = item.quantity;
+    if (qty > variant.stock) {
+      if (strict)
+        v.fail(
+          409,
+          'Only ' +
+            variant.stock +
+            ' available for ' +
+            product.title +
+            ' / ' +
+            item.color +
+            ' / ' +
+            item.size +
+            '.',
+        );
+      qty = Math.min(variant.stock, 50);
+      warnings.push('Quantity was adjusted to available stock for ' + product.title + '.');
+    }
+    result.push({
+      product: product._id,
+      title: product.title,
+      color: item.color,
+      size: item.size,
+      quantity: qty,
+      price: product.basePrice,
+      image: product.images[0] || '/images/product.svg',
+      availableStock: variant.stock,
+    });
+  }
+  return { items: result, warnings };
+};
+const cartResponse = (cart, items, warnings = []) => ({
+  success: true,
+  cart: { items: items || cart.items, revision: cart.revision || 0 },
+  warnings,
+});
 export const getCart = async (req, res) => {
-  try {
-    const db = checkDBStatus();
-    if (!db.isReady) {
-      return res.status(200).json({
-        success: true,
-        cart: { items: [], total: 0 },
-        message: 'Cart retrieved (scaffold mode).',
-      });
-    }
-
-    let cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
-
-    if (!cart) {
-      cart = await Cart.create({ user: req.user._id, items: [] });
-    }
-
-    const subtotal = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-    res.status(200).json({
-      success: true,
-      cart: {
-        id: cart._id,
-        items: cart.items,
-        subtotal,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve shopping bag.',
-      error: error.message,
-    });
-  }
+  const cart = await Cart.findOneAndUpdate(
+    { user: req.user._id },
+    { $setOnInsert: { items: [] } },
+    { upsert: true, returnDocument: 'after' },
+  );
+  const normalized = await normalizeItems(cart.items, { strict: false });
+  res.json(cartResponse(cart, normalized.items, normalized.warnings));
 };
-
-/**
- * Add or increment item in shopping bag
- * POST /api/cart/items
- */
-export const addItem = async (req, res) => {
-  try {
-    const { productId, size, color, quantity = 1 } = req.body;
-
-    if (!productId || !size || !color) {
-      return res.status(400).json({
-        success: false,
-        message: 'Product ID, size, and color are required.',
-      });
-    }
-
-    const db = checkDBStatus();
-    if (!db.isReady) {
-      return res.status(200).json({
-        success: true,
-        message: 'Item added to bag (scaffold mode).',
-      });
-    }
-
-    const product = await Product.findOne({ _id: productId, isDeleted: false, isActive: true });
-    if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found.' });
-    }
-
-    // Check variant stock if defined
-    const variant = product.variants?.find(
-      (v) =>
-        v.size.toLowerCase() === size.toLowerCase() &&
-        v.color.toLowerCase() === color.toLowerCase()
-    );
-
-    if (variant && variant.stock < quantity) {
-      return res.status(400).json({
-        success: false,
-        message: `Only ${variant.stock} units available in ${size} / ${color}.`,
-      });
-    }
-
-    let cart = await Cart.findOne({ user: req.user._id });
-    if (!cart) {
-      cart = new Cart({ user: req.user._id, items: [] });
-    }
-
-    const existingIndex = cart.items.findIndex(
-      (item) =>
-        item.product.toString() === productId &&
-        item.size.toLowerCase() === size.toLowerCase() &&
-        item.color.toLowerCase() === color.toLowerCase()
-    );
-
-    if (existingIndex > -1) {
-      cart.items[existingIndex].quantity += Number(quantity);
-    } else {
-      cart.items.push({
-        product: product._id,
-        title: product.title,
-        color,
-        size,
-        quantity: Number(quantity),
-        price: product.basePrice,
-        image: product.images[0] || '',
-      });
-    }
-
-    await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Item added to bag.',
-      cart,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add item to bag.',
-      error: error.message,
-    });
-  }
+export const saveCart = async (req, res) => {
+  if (!Number.isInteger(req.body.revision) || req.body.revision < 0)
+    v.fail(400, 'Cart revision is required.');
+  const normalized = await normalizeItems(req.body.items, { strict: false });
+  const cart = await Cart.findOneAndUpdate(
+    { user: req.user._id, revision: req.body.revision },
+    { $set: { items: normalized.items }, $inc: { revision: 1 } },
+    { returnDocument: 'after', runValidators: true },
+  );
+  if (!cart) v.fail(409, 'Your bag changed in another session. Reload the bag and try again.');
+  res.json(cartResponse(cart, normalized.items, normalized.warnings));
 };
-
-/**
- * Update quantity of a specific item
- * PUT /api/cart/items/:itemId
- */
-export const updateItem = async (req, res) => {
-  try {
-    const { itemId } = req.params;
-    const { quantity } = req.body;
-
-    if (!quantity || quantity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Quantity must be at least 1.',
-      });
-    }
-
-    const db = checkDBStatus();
-    if (!db.isReady) {
-      return res.status(200).json({
-        success: true,
-        message: 'Item updated (scaffold mode).',
-      });
-    }
-
-    const cart = await Cart.findOne({ user: req.user._id });
-    if (!cart) {
-      return res.status(404).json({ success: false, message: 'Cart not found.' });
-    }
-
-    const item = cart.items.id(itemId);
-    if (!item) {
-      return res.status(404).json({ success: false, message: 'Item not found in bag.' });
-    }
-
-    item.quantity = Number(quantity);
-    await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Item quantity updated.',
-      cart,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update item quantity.',
-      error: error.message,
-    });
-  }
-};
-
-/**
- * Remove an item from the shopping bag
- * DELETE /api/cart/items/:itemId
- */
-export const removeItem = async (req, res) => {
-  try {
-    const { itemId } = req.params;
-    const db = checkDBStatus();
-
-    if (!db.isReady) {
-      return res.status(200).json({
-        success: true,
-        message: 'Item removed (scaffold mode).',
-      });
-    }
-
-    const cart = await Cart.findOne({ user: req.user._id });
-    if (!cart) {
-      return res.status(404).json({ success: false, message: 'Cart not found.' });
-    }
-
-    cart.items = cart.items.filter((item) => item._id.toString() !== itemId);
-    await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Item removed from bag.',
-      cart,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to remove item.',
-      error: error.message,
-    });
-  }
-};
-
-/**
- * Empty the shopping bag
- * DELETE /api/cart
- */
-export const clearCart = async (req, res) => {
-  try {
-    const db = checkDBStatus();
-    if (!db.isReady) {
-      return res.status(200).json({
-        success: true,
-        message: 'Cart cleared (scaffold mode).',
-      });
-    }
-
-    await Cart.findOneAndUpdate({ user: req.user._id }, { items: [] });
-
-    res.status(200).json({
-      success: true,
-      message: 'Shopping bag cleared.',
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to clear shopping bag.',
-      error: error.message,
-    });
-  }
-};
-
-/**
- * Synchronize guest localStorage bag with user account upon login
- * POST /api/cart/sync
- */
 export const syncCart = async (req, res) => {
+  const key = v.text(req.body.mergeKey, 'bag merge key', 100);
+  const session = await mongoose.startSession();
+  let result;
   try {
-    const { guestItems } = req.body;
-
-    if (!Array.isArray(guestItems) || guestItems.length === 0) {
-      return res.status(200).json({ success: true, message: 'No items to sync.' });
-    }
-
-    const db = checkDBStatus();
-    if (!db.isReady) {
-      return res.status(200).json({
-        success: true,
-        message: 'Cart synchronized (scaffold mode).',
-      });
-    }
-
-    let cart = await Cart.findOne({ user: req.user._id });
-    if (!cart) {
-      cart = new Cart({ user: req.user._id, items: [] });
-    }
-
-    for (const gItem of guestItems) {
-      const idx = cart.items.findIndex(
-        (ci) =>
-          ci.product.toString() === String(gItem.productId || gItem.id) &&
-          ci.size.toLowerCase() === (gItem.size || '').toLowerCase() &&
-          ci.color.toLowerCase() === (gItem.color || '').toLowerCase()
-      );
-
-      if (idx > -1) {
-        cart.items[idx].quantity += Number(gItem.quantity || 1);
-      } else {
-        cart.items.push({
-          product: gItem.productId || gItem.id,
-          title: gItem.title || gItem.name,
-          color: gItem.color,
-          size: gItem.size,
-          quantity: Number(gItem.quantity || 1),
-          price: Number(gItem.price),
-          image: gItem.image || '',
-        });
+    await session.withTransaction(async () => {
+      let cart = await Cart.findOne({ user: req.user._id }).session(session);
+      if (!cart) [cart] = await Cart.create([{ user: req.user._id, items: [] }], { session });
+      if (cart.mergeKeys.includes(key)) {
+        const n = await normalizeItems(cart.items, { session, strict: false });
+        result = cartResponse(cart, n.items, n.warnings);
+        return;
       }
-    }
-
-    await cart.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Shopping bag synchronized with your account.',
-      cart,
+      const normalized = await normalizeItems([...cart.items, ...(req.body.guestItems || [])], {
+        session,
+        strict: false,
+      });
+      cart.items = normalized.items;
+      cart.revision = (cart.revision || 0) + 1;
+      cart.mergeKeys = [...cart.mergeKeys.slice(-19), key];
+      await cart.save({ session });
+      result = cartResponse(cart, normalized.items, normalized.warnings);
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to synchronize bag.',
-      error: error.message,
-    });
+  } finally {
+    await session.endSession();
   }
+  res.json(result);
+};
+export const clearCart = async (req, res) => {
+  const cart = await Cart.findOneAndUpdate(
+    { user: req.user._id },
+    { $set: { items: [] }, $inc: { revision: 1 } },
+    { returnDocument: 'after' },
+  );
+  res.json(cartResponse(cart || { items: [], revision: 0 }));
 };

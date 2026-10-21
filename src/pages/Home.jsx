@@ -1,126 +1,92 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { mockProducts, bannerImg } from '../data/mockProducts';
-import { motion } from 'framer-motion';
+import { ArrowRight, Truck, ShieldCheck, Layers } from 'lucide-react';
+import { useStore } from '../context/store';
+import { useResource } from '../lib/store';
+import { ProductCard, Status, Empty } from '../components/UI';
 import PageTransition from '../components/PageTransition';
-
-const Home = () => {
-  const featured = mockProducts.slice(0, 2);
-
+export default function Home() {
+  const { settings } = useStore();
+  const catalog = useResource('/products?limit=4');
   return (
-    <PageTransition className="home-page">
-      {/* Hero Section with Custom Editorial Banner */}
-      <section className="hero-section relative w-full flex items-center justify-center overflow-hidden">
-        <div className="hero-overlay absolute inset-0 z-10" />
-        <img 
-          src={bannerImg} 
-          alt="Mazhari Editorial Banner" 
-          className="hero-img absolute inset-0 w-full h-full"
+    <PageTransition>
+      <section className="store-hero">
+        <img
+          src={settings?.heroImage || '/images/banner.svg'}
+          alt="Mazhari outerwear collection"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = '/images/banner.svg';
+          }}
         />
-        <div className="hero-content relative z-20">
-          <motion.h1 
-            initial={{ y: 24, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          >
-            Core Outerwear
-          </motion.h1>
-          <motion.p 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-          >
-            Tactile luxury tailored for the modern uniform. Precision cuts in suede, leather, fur, and double-faced wool.
-          </motion.p>
-          <motion.div
-            initial={{ y: 16, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
-          >
-            <Link to="/shop" className="hero-btn">
-              Explore Collection
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Featured Products */}
-      <section className="featured-section">
-        <div className="section-header flex justify-between items-end">
-          <h2>Featured Outerwear</h2>
-          <Link to="/shop" className="view-all hidden md:block">
-            View All Jackets
-          </Link>
-        </div>
-        
-        <div className="product-grid grid grid-cols-1 md:grid-cols-2">
-          {featured.map((product, idx) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6, delay: idx * 0.15, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <Link to={`/product/${product.id}`} className="product-card block">
-                <div className="img-container relative overflow-hidden">
-                  <img 
-                    src={product.images[0]} 
-                    alt={product.name} 
-                    className="img-main absolute inset-0 w-full h-full"
-                  />
-                  <img 
-                    src={product.images[1] || product.images[0]} 
-                    alt={`${product.name} alternate view`} 
-                    className="img-hover absolute inset-0 w-full h-full"
-                  />
-                </div>
-                <div className="product-info flex flex-col gap-2">
-                  <div className="title-row flex justify-between items-start">
-                    <h3>{product.name}</h3>
-                    <span className="price">${product.price}</span>
-                  </div>
-                  <p className="description">{product.description}</p>
-                  <div className="meta-row flex flex-wrap justify-between items-center gap-2">
-                    <span className="colors-badge">
-                      Colors: {product.colors.join(' · ')}
-                    </span>
-                    <span className="shipping-badge">
-                      Shipping: ${product.shippingFee}
-                    </span>
-                  </div>
-                  <div className="sizes-row">
-                    <span className="sizes-label">Sizes: {product.sizes.join(', ')}</span>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-        <div className="mobile-view-all md:hidden">
-          <Link to="/shop" className="view-all">
-            View All Jackets
-          </Link>
-        </div>
-      </section>
-
-      {/* Brand Ethos */}
-      <section className="ethos-section">
-        <motion.div 
-          className="ethos-inner"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <h2>The Mazhari Atelier</h2>
+        <div className="hero-copy">
+          <span className="eyebrow">MAZHARI / THE OUTERWEAR EDIT</span>
+          <h1>{settings?.heroTitle || 'A different kind of statement.'}</h1>
           <p>
-            Every jacket is handcrafted with obsessive dedication to structural drape and material integrity. From raw lambskin to dense shearling-grade faux fur, our silhouettes are designed to transcend transient seasons.
+            {settings?.heroSubtitle ||
+              'Considered silhouettes. Distinctive textures. Discover the Mazhari outerwear collection.'}
           </p>
-        </motion.div>
+          <Link to="/shop" className="btn">
+            Explore the collection <ArrowRight size={18} />
+          </Link>
+          <span className="hero-footnote">DESIGNED TO STAND APART.</span>
+        </div>
+        <span className="hero-index">01 / THE SIGNATURE EDIT</span>
+      </section>
+      <div className="service-strip">
+        <span>
+          <Truck size={18} />
+          Delivery across Egypt
+        </span>
+        <span>
+          <ShieldCheck size={18} />
+          Cash on delivery
+        </span>
+        <span>
+          <Layers size={18} />
+          Choose your size & color
+        </span>
+      </div>
+      <section className="store-section">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">THE CURRENT SELECTION</span>
+            <h2>Pieces with presence.</h2>
+          </div>
+          <Link to="/shop" className="text-link">
+            Shop all <ArrowRight size={16} />
+          </Link>
+        </div>
+        <Status {...catalog} retry={catalog.refresh} />
+        {catalog.data?.products.length > 0 ? (
+          <div className="catalog-grid">
+            {catalog.data.products.map((p) => (
+              <ProductCard key={p._id} product={p} />
+            ))}
+          </div>
+        ) : (
+          !catalog.loading &&
+          !catalog.error && (
+            <Empty title="A new collection is taking shape.">
+              <p>Our latest pieces will appear here soon.</p>
+            </Empty>
+          )
+        )}
+      </section>
+      <section className="brand-note">
+        <span className="eyebrow">LESS ORDINARY. MORE YOU.</span>
+        <h2>
+          Texture. Shape.
+          <br />
+          <em>A point of view.</em>
+        </h2>
+        <p>
+          Mazhari brings distinctive outerwear into everyday life. Explore the details, find your
+          fit, and make the silhouette your own.
+        </p>
+        <Link to="/about" className="text-link">
+          Meet Mazhari <ArrowRight size={16} />
+        </Link>
       </section>
     </PageTransition>
   );
-};
-
-export default Home;
+}

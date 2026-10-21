@@ -4,7 +4,7 @@
   .hero-section {
     height: 100vh;
     position: relative;
-    
+
     .hero-overlay {
       background: linear-gradient(
         to bottom,
@@ -14,16 +14,16 @@
         rgba(11, 11, 14, 0.98) 100%
       );
     }
-    
+
     .hero-img {
       object-fit: cover;
     }
-    
+
     .hero-content {
       text-align: center;
       color: $text-primary;
       padding: 0 1.5rem;
-      
+
       h1 {
         font-size: 3.25rem;
         font-family: $font-display;
@@ -33,12 +33,12 @@
         line-height: 1.1;
         margin-bottom: 1.25rem;
         text-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
-        
+
         @media (min-width: 768px) {
           font-size: 5rem;
         }
       }
-      
+
       p {
         font-size: 1rem;
         font-weight: 300;
@@ -47,12 +47,12 @@
         color: rgba(245, 245, 247, 0.85);
         max-width: 32rem;
         margin: 0 auto 2.5rem;
-        
+
         @media (min-width: 768px) {
           font-size: 1.125rem;
         }
       }
-      
+
       .hero-btn {
         background: linear-gradient(135deg, $accent-color 0%, $accent-hover 100%);
         color: #0b0b0e;
@@ -64,7 +64,7 @@
         box-shadow: $shadow-glow;
         transition: $transition-soft;
         display: inline-block;
-        
+
         &:hover {
           transform: translateY(-2px) scale(1.02);
           box-shadow: 0 0 32px rgba(244, 114, 182, 0.4);
@@ -81,13 +81,17 @@
     max-width: 80rem;
     margin-left: auto;
     margin-right: auto;
-    
-    @media (min-width: 640px) { padding: 6rem 2rem; }
-    @media (min-width: 1024px) { padding: 7rem 2.5rem; }
-    
+
+    @media (min-width: 640px) {
+      padding: 6rem 2rem;
+    }
+    @media (min-width: 1024px) {
+      padding: 7rem 2.5rem;
+    }
+
     .section-header {
       margin-bottom: 3.5rem;
-      
+
       h2 {
         font-size: 2.25rem;
         font-family: $font-display;
@@ -95,7 +99,7 @@
         letter-spacing: 0.03em;
         text-transform: uppercase;
       }
-      
+
       .view-all {
         font-size: 0.8125rem;
         letter-spacing: 0.05em;
@@ -103,25 +107,25 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         padding-bottom: 0.25rem;
         transition: $transition-soft;
-        
+
         &:hover {
           color: $accent-color;
           border-color: $accent-color;
         }
       }
     }
-    
+
     .product-grid {
       gap: 2.5rem;
     }
-    
+
     .product-card {
       cursor: pointer;
-      
+
       &:hover {
         .img-container {
           box-shadow: $shadow-md;
-          
+
           .img-main {
             opacity: 0;
             transform: scale(1.03);
@@ -136,7 +140,7 @@
           color: $accent-color;
         }
       }
-      
+
       .img-container {
         aspect-ratio: 3/4;
         background-color: $bg-surface;
@@ -145,17 +149,19 @@
         overflow: hidden;
         border: 1px solid $border-color;
         transition: $transition-soft;
-        
+
         img {
           object-fit: cover;
-          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+          transition:
+            transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 0.5s ease;
         }
-        
+
         .img-hover {
           opacity: 0;
         }
       }
-      
+
       .product-info {
         .title-row {
           h3 {
@@ -170,7 +176,7 @@
             color: $accent-color;
           }
         }
-        
+
         .description {
           font-size: 0.8125rem;
           color: $text-secondary;
@@ -181,10 +187,10 @@
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
-        
+
         .meta-row {
           margin-top: 0.25rem;
-          
+
           .colors-badge {
             font-size: 0.75rem;
             color: $text-primary;
@@ -194,7 +200,7 @@
             border-radius: $radius-full;
             font-weight: 400;
           }
-          
+
           .shipping-badge {
             font-size: 0.75rem;
             color: #34d399;
@@ -205,7 +211,7 @@
             font-weight: 500;
           }
         }
-        
+
         .sizes-row {
           .sizes-label {
             font-size: 0.75rem;
@@ -214,11 +220,11 @@
         }
       }
     }
-    
+
     .mobile-view-all {
       margin-top: 2.5rem;
       text-align: center;
-      
+
       .view-all {
         font-size: 0.8125rem;
         letter-spacing: 0.05em;
@@ -238,12 +244,12 @@
     text-align: center;
     border-top: 1px solid $border-color;
     border-bottom: 1px solid $border-color;
-    
+
     .ethos-inner {
       max-width: 44rem;
       margin-left: auto;
       margin-right: auto;
-      
+
       h2 {
         font-size: 2.25rem;
         font-family: $font-serif;
@@ -252,7 +258,7 @@
         margin-bottom: 1.5rem;
         color: $accent-color;
       }
-      
+
       p {
         color: $text-secondary;
         line-height: 1.8;

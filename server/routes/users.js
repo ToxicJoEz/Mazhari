@@ -1,23 +1,13 @@
-import express from 'express';
-import {
-  getProfile,
-  updateProfile,
-  changePassword,
-  softDeleteAccount,
-  restoreAccount,
-} from '../controllers/userController.js';
+import { Router } from 'express';
+import * as c from '../controllers/userController.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
-
-const router = express.Router();
-
-// Public restoration endpoint for returning deleted accounts
-router.post('/restore', restoreAccount);
-
-// Protected customer account endpoints
+import { rateLimit } from '../middleware/rateLimit.js';
+import { route } from '../utils/validation.js';
+const router = Router();
+router.post('/restore', rateLimit('accounts', 50), route(c.restoreAccount));
 router.use(verifyToken);
-router.get('/profile', getProfile);
-router.put('/profile', updateProfile);
-router.put('/change-password', changePassword);
-router.delete('/profile', softDeleteAccount);
-
+router.get('/profile', route(c.getProfile));
+router.put('/profile', route(c.updateProfile));
+router.put('/change-password', route(c.changePassword));
+router.delete('/profile', route(c.softDeleteAccount));
 export default router;

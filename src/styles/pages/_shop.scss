@@ -9,14 +9,20 @@
   margin-left: auto;
   margin-right: auto;
   min-height: 100vh;
-  
-  @media (min-width: 640px) { padding-left: 2rem; padding-right: 2rem; }
-  @media (min-width: 1024px) { padding-left: 2.5rem; padding-right: 2.5rem; }
+
+  @media (min-width: 640px) {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  @media (min-width: 1024px) {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
 
   .shop-header {
     text-align: center;
     margin-bottom: 3.5rem;
-    
+
     h1 {
       font-size: 2.5rem;
       font-family: $font-serif;
@@ -24,7 +30,7 @@
       letter-spacing: 0.03em;
       margin-bottom: 0.75rem;
     }
-    
+
     p {
       color: $text-secondary;
       font-weight: 300;
@@ -38,13 +44,13 @@
     border-bottom: 1px solid $border-color;
     padding-bottom: 1.25rem;
     margin-bottom: 3rem;
-    
+
     .results-count {
       font-size: 0.8125rem;
       color: $text-muted;
       letter-spacing: 0.02em;
     }
-    
+
     .filters button {
       letter-spacing: 0.04em;
       font-size: 0.75rem;
@@ -55,7 +61,7 @@
       background-color: rgba(255, 255, 255, 0.02);
       color: $text-secondary;
       transition: $transition-soft;
-      
+
       &:hover {
         color: $accent-color;
         border-color: $accent-color;
@@ -66,14 +72,14 @@
 
   .product-grid {
     gap: 2.5rem 3rem;
-    
+
     .product-card {
       cursor: pointer;
-      
+
       &:hover {
         .img-container {
           box-shadow: $shadow-md;
-          
+
           .img-main {
             opacity: 0;
             transform: scale(1.03);
@@ -88,7 +94,7 @@
           color: $accent-color;
         }
       }
-      
+
       .img-container {
         aspect-ratio: 3/4;
         background-color: $bg-surface;
@@ -98,16 +104,18 @@
         border: 1px solid $border-color;
         position: relative;
         transition: $transition-soft;
-        
+
         img {
           object-fit: cover;
-          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+          transition:
+            transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 0.5s ease;
         }
-        
+
         .img-hover {
           opacity: 0;
         }
-        
+
         .low-stock-badge {
           bottom: 0.875rem;
           left: 0.875rem;
@@ -123,7 +131,7 @@
           box-shadow: $shadow-sm;
         }
       }
-      
+
       .product-info {
         .title-row {
           h3 {
@@ -138,7 +146,7 @@
             color: $accent-color;
           }
         }
-        
+
         .description {
           font-size: 0.8125rem;
           color: $text-secondary;
@@ -149,10 +157,10 @@
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
-        
+
         .meta-row {
           margin-top: 0.25rem;
-          
+
           .colors-badge {
             font-size: 0.75rem;
             color: $text-primary;
@@ -162,7 +170,7 @@
             border-radius: $radius-full;
             font-weight: 400;
           }
-          
+
           .shipping-badge {
             font-size: 0.75rem;
             color: #34d399;
@@ -173,7 +181,7 @@
             font-weight: 500;
           }
         }
-        
+
         .sizes-row {
           .sizes-label {
             font-size: 0.75rem;

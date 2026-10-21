@@ -1,166 +1,459 @@
-import React, { useState } from 'react';
-import { useCart } from '../context/CartContext';
-import { Link } from 'react-router-dom';
+/* eslint-disable react/set-state-in-effect -- Prefill authenticated details and clear the previous server quote when the delivery selection changes. */
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LockKeyhole, Truck } from 'lucide-react';
+import { useCart } from '../context/cart';
+import { useAuth } from '../context/auth';
+import { useStore } from '../context/store';
+import { apiRequest } from '../lib/api';
+import { money } from '../lib/store';
+import { Status, Notice, Empty } from '../components/UI';
 import PageTransition from '../components/PageTransition';
-import { motion, AnimatePresence } from 'framer-motion';
-
-const Checkout = () => {
-  const { cartItems, subtotal, totalShipping } = useCart();
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    whatsapp: '',
-    address: '',
-    city: '',
-    zip: '',
-    notes: ''
+function checkoutKey() {
+  try {
+    let value = sessionStorage.getItem('mazhari-checkout-key');
+    if (!value) {
+      value = crypto.randomUUID();
+      sessionStorage.setItem('mazhari-checkout-key', value);
+    }
+    return value;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+const empty = {
+  name: '',
+  email: '',
+  mobile: '',
+  whatsapp: '',
+  street: '',
+  city: '',
+  governorate: '',
+  zip: '',
+  notes: '',
+};
+export default function Checkout() {
+  const cart = useCart();
+  const { user, token, loading } = useAuth();
+  const store = useStore();
+  const navigate = useNavigate();
+  const [form, setForm] = useState(() => {
+    try {
+      return {
+        ...empty,
+        ...JSON.parse(sessionStorage.getItem('mazhari-checkout-draft') || 'null'),
+      };
+    } catch {
+      return empty;
+    }
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const [quote, setQuote] = useState(null);
+  const [quoting, setQuoting] = useState(false);
+  const [quoteError, setQuoteError] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [refresh, setRefresh] = useState(0);
+  const requestKey = useRef(checkoutKey());
+  useEffect(() => {
+    if (user)
+      setForm((f) => ({
+        ...f,
+        name: f.name || user.name,
+        email: f.email || user.email,
+        mobile: f.mobile || user.mobile,
+        ...(!f.street && user.addresses?.length ? user.addresses[0] : {}),
+      }));
+  }, [user]);
+  const serialized = JSON.stringify(
+    cart.cartItems.map((i) => ({
+      productId: i.id,
+      color: i.color,
+      size: i.size,
+      quantity: i.quantity,
+    })),
+  );
+  useEffect(() => {
+    setQuote(null);
+    setQuoteError('');
+    if (!form.governorate || !cart.ready || !cart.cartItems.length) {
+      setQuoting(false);
+      return;
+    }
+    const controller = new AbortController();
+    setQuoting(true);
+    apiRequest('/orders/quote', {
+      method: 'POST',
+      signal: controller.signal,
+      body: JSON.stringify({ governorate: form.governorate, items: JSON.parse(serialized) }),
+    })
+      .then((data) => {
+        if (!controller.signal.aborted) setQuote(data.quote);
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) setQuoteError(err.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setQuoting(false);
+      });
+    return () => controller.abort();
+  }, [form.governorate, serialized, cart.ready, cart.cartItems.length, refresh]);
+  const field = (event) => {
+    setForm((f) => ({ ...f, [event.target.name]: event.target.value }));
   };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsSubmitted(true);
+  const saveDraft = () => {
+    try {
+      sessionStorage.setItem('mazhari-checkout-draft', JSON.stringify(form));
+    } catch {
+      /* Draft is optional. */
+    }
   };
-
-  if (cartItems.length === 0 && !isSubmitted) {
+  async function submit(event) {
+    event.preventDefault();
+    if (busy || !quote || !accepted) return;
+    setBusy(true);
+    setError('');
+    saveDraft();
+    try {
+      const data = await apiRequest('/orders', {
+        token,
+        method: 'POST',
+        body: JSON.stringify({
+          customer: {
+            name: form.name,
+            email: form.email,
+            mobile: form.mobile,
+            whatsapp: form.whatsapp,
+          },
+          shippingAddress: {
+            street: form.street,
+            city: form.city,
+            governorate: form.governorate,
+            zip: form.zip,
+            notes: form.notes,
+          },
+          items: JSON.parse(serialized),
+          expectedTotal: quote.total,
+          acceptedTerms: accepted,
+          idempotencyKey: requestKey.current,
+        }),
+      });
+      if (data.trackingToken) {
+        try {
+          const saved = JSON.parse(localStorage.getItem('mazhari-tracking') || '{}');
+          localStorage.setItem(
+            'mazhari-tracking',
+            JSON.stringify({ ...saved, [data.order.orderNumber]: data.trackingToken }),
+          );
+        } catch {
+          /* The confirmation still displays its tracking key. */
+        }
+      }
+      try {
+        sessionStorage.removeItem('mazhari-checkout-draft');
+        sessionStorage.removeItem('mazhari-checkout-key');
+      } catch {}
+      cart.afterCheckout(data.order.items);
+      navigate(
+        '/orders/' + data.order.orderNumber + (data.trackingToken ? '#' + data.trackingToken : ''),
+        { state: { placed: true }, replace: true },
+      );
+    } catch (err) {
+      if (err.data?.savedOrder) {
+        const saved = err.data.savedOrder;
+        cart.afterCheckout(saved.items);
+        try {
+          if (err.data.trackingToken) {
+            const tracked = JSON.parse(localStorage.getItem('mazhari-tracking') || '{}');
+            localStorage.setItem(
+              'mazhari-tracking',
+              JSON.stringify({ ...tracked, [saved.orderNumber]: err.data.trackingToken }),
+            );
+          }
+          sessionStorage.removeItem('mazhari-checkout-key');
+          sessionStorage.removeItem('mazhari-checkout-draft');
+        } catch {}
+        navigate(
+          '/orders/' +
+            saved.orderNumber +
+            (err.data.trackingToken ? '#' + err.data.trackingToken : ''),
+          { state: { reused: true }, replace: true },
+        );
+        return;
+      }
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  if (loading)
     return (
-      <PageTransition className="checkout-empty flex flex-col items-center justify-center">
-        <h1>Your Cart is Empty</h1>
-        <Link to="/shop" className="return-link">Return to Collection</Link>
+      <PageTransition className="store-page">
+        <Status loading />
       </PageTransition>
     );
-  }
-
-  const grandTotal = subtotal + totalShipping;
-
+  if (!cart.ready)
+    return (
+      <PageTransition className="store-page">
+        <Status loading={!cart.error} error={cart.error} retry={cart.retryCart} />
+      </PageTransition>
+    );
+  if (!cart.cartItems.length)
+    return (
+      <PageTransition className="store-page">
+        <Empty title="Your bag is waiting for its first piece.">
+          <Link to="/shop" className="btn">
+            Explore the collection
+          </Link>
+        </Empty>
+      </PageTransition>
+    );
   return (
-    <PageTransition className="checkout-page">
-      <AnimatePresence mode="wait">
-        {isSubmitted ? (
-          <motion.div 
-            key="success"
-            className="checkout-success flex flex-col items-center justify-center"
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <h1>Order Request Confirmed</h1>
+    <PageTransition className="store-page">
+      <header className="page-heading compact">
+        <span className="eyebrow">THE FINAL DETAILS</span>
+        <h1>Make it yours.</h1>
+        <p>Secure checkout. Payment in cash on delivery.</p>
+      </header>
+      {!user && (
+        <div className="guest-prompt">
+          <div>
+            <strong>Have a Mazhari account?</strong>
             <p>
-              Thank you, {formData.firstName}. We have received your piece reservation. Our concierge team will reach out directly to your WhatsApp at {formData.whatsapp} to confirm shipping logistics and arrange manual payment.
+              Sign in to save your bag and find your orders in one place. Your selections come with
+              you.
             </p>
-            <Link to="/" className="home-btn">Return to Home</Link>
-          </motion.div>
-        ) : (
-          <motion.div 
-            key="form"
-            className="checkout-layout flex flex-col lg:flex-row"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-          >
-            {/* Form Section */}
-            <div className="form-section w-full lg:w-3/5">
-              <h1>Direct Order Reservation</h1>
-              <p className="intro-text">
-                Submit your reservation details below. Online card payments are not charged; our team will personally contact you via WhatsApp to finalize your order.
+          </div>
+          <div className="row">
+            <Link className="btn secondary" onClick={saveDraft} to="/login?next=/checkout">
+              Sign in
+            </Link>
+            <Link className="text-link" onClick={saveDraft} to="/register?next=/checkout">
+              Create account
+            </Link>
+          </div>
+          <small>Or continue below as a guest.</small>
+        </div>
+      )}
+      <Notice error={cart.error} notice={cart.notice} />
+      <div className="checkout-columns">
+        <form className="panel checkout-form" onSubmit={submit}>
+          <h2>01 / Contact details</h2>
+          <div className="form-grid">
+            <label>
+              Full name
+              <input
+                name="name"
+                required
+                autoComplete="name"
+                maxLength={100}
+                value={form.name}
+                onChange={field}
+              />
+            </label>
+            <label>
+              Email
+              <input
+                name="email"
+                required
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={field}
+              />
+            </label>
+            <label>
+              Mobile number
+              <input
+                name="mobile"
+                required
+                type="tel"
+                autoComplete="tel"
+                value={form.mobile}
+                onChange={field}
+              />
+            </label>
+            <label>
+              WhatsApp <span className="muted">(optional)</span>
+              <input name="whatsapp" type="tel" value={form.whatsapp} onChange={field} />
+            </label>
+          </div>
+          <h2>02 / Delivery address</h2>
+          {user?.addresses?.length > 0 && (
+            <label>
+              Use a saved address
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value !== '')
+                    setForm((f) => ({ ...f, ...user.addresses[Number(e.target.value)] }));
+                }}
+              >
+                <option value="">Choose an address</option>
+                {user.addresses.map((a, i) => (
+                  <option value={i} key={a._id || i}>
+                    {a.street}, {a.governorate}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div className="form-grid">
+            <label>
+              Governorate
+              <select name="governorate" required value={form.governorate} onChange={field}>
+                <option value="">Choose governorate</option>
+                {store.settings?.shippingRates.map((rate) => (
+                  <option key={rate.governorate}>{rate.governorate}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              City / district
+              <input
+                name="city"
+                required
+                autoComplete="address-level2"
+                maxLength={100}
+                value={form.city}
+                onChange={field}
+              />
+            </label>
+            <label className="span-2">
+              Street, building & apartment
+              <input
+                name="street"
+                required
+                autoComplete="street-address"
+                maxLength={300}
+                value={form.street}
+                onChange={field}
+              />
+            </label>
+            <label>
+              Postal code <span className="muted">(optional)</span>
+              <input
+                name="zip"
+                maxLength={20}
+                autoComplete="postal-code"
+                value={form.zip}
+                onChange={field}
+              />
+            </label>
+            <label className="span-2">
+              Delivery notes <span className="muted">(optional)</span>
+              <textarea
+                name="notes"
+                maxLength={1000}
+                rows={3}
+                value={form.notes}
+                onChange={field}
+              />
+            </label>
+          </div>
+          <h2>03 / Payment</h2>
+          <div className="payment-choice">
+            <Truck size={22} />
+            <div>
+              <strong>Cash on delivery</strong>
+              <p>
+                Pay the displayed total when your order arrives. We’ll contact you to confirm before
+                dispatch.
               </p>
-
-              <form onSubmit={handleSubmit}>
-                <h2 className="section-title">Client Details</h2>
-                <div className="input-group grid grid-cols-1 md:grid-cols-2">
-                  <div className="input-field">
-                    <label>First Name</label>
-                    <input required type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="w-full" />
-                  </div>
-                  <div className="input-field">
-                    <label>Last Name</label>
-                    <input required type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="w-full" />
-                  </div>
-                </div>
-                
-                <div className="input-field">
-                  <label>WhatsApp Phone Number (For order verification)</label>
-                  <input required type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleChange} className="w-full" placeholder="+1 (555) 000-0000" />
-                </div>
-
-                <h2 className="section-title margin-top">Delivery Address</h2>
-                <div className="input-field">
-                  <label>Street Address</label>
-                  <input required type="text" name="address" value={formData.address} onChange={handleChange} className="w-full" />
-                </div>
-                <div className="input-group grid grid-cols-1 md:grid-cols-2">
-                  <div className="input-field">
-                    <label>City</label>
-                    <input required type="text" name="city" value={formData.city} onChange={handleChange} className="w-full" />
-                  </div>
-                  <div className="input-field">
-                    <label>Postal / Zip Code</label>
-                    <input required type="text" name="zip" value={formData.zip} onChange={handleChange} className="w-full" />
-                  </div>
-                </div>
-
-                <h2 className="section-title margin-top">Special Requests / Notes</h2>
-                <div className="input-field">
-                  <textarea name="notes" value={formData.notes} onChange={handleChange} rows="3" className="w-full" placeholder="Fitting notes, gift packaging, or delivery preferences"></textarea>
-                </div>
-
-                <button type="submit" className="submit-btn w-full">
-                  Submit Reservation Request · ${grandTotal}
-                </button>
-              </form>
             </div>
-
-            {/* Order Summary */}
-            <div className="summary-section w-full lg:w-2/5">
-              <div className="summary-sticky lg:sticky">
-                <h2>Reserved Items</h2>
-                <div className="summary-items">
-                  {cartItems.map((item) => (
-                    <div key={`${item.id}-${item.size}-${item.color}`} className="summary-item flex">
-                      <img src={item.images[0]} alt={item.name} />
-                      <div className="item-details flex-grow flex flex-col justify-center">
-                        <div className="item-header flex justify-between">
-                          <h3>{item.name}</h3>
-                          <span>${item.price * item.quantity}</span>
-                        </div>
-                        <p className="item-meta">
-                          {item.color} · Size: {item.size} · Qty: {item.quantity}
-                        </p>
-                        <p className="item-shipping-sub">
-                          Shipping: ${item.shippingFee * item.quantity}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="summary-totals">
-                  <div className="total-row flex justify-between">
-                    <span className="label">Item Subtotal</span>
-                    <span className="value">${subtotal}</span>
-                  </div>
-                  <div className="total-row flex justify-between">
-                    <span className="label">Insured Shipping</span>
-                    <span className="value">${totalShipping}</span>
-                  </div>
-                  <div className="grand-total flex justify-between items-end">
-                    <span className="label">Estimated Total</span>
-                    <span className="value">${grandTotal}</span>
-                  </div>
-                </div>
+          </div>
+          <label className="check">
+            <input
+              type="checkbox"
+              required
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+            />
+            <span>
+              I agree to the{' '}
+              <Link to="/terms" className="text-link">
+                store terms
+              </Link>{' '}
+              and have read the{' '}
+              <Link to="/shipping" className="text-link">
+                delivery and final-sale policy
+              </Link>
+              .
+            </span>
+          </label>
+          <Notice error={error} />
+          <button
+            className="btn wide"
+            disabled={busy || !quote || quoting || !cart.ready || cart.pending || !accepted}
+          >
+            {busy
+              ? 'Placing your order…'
+              : quote
+                ? 'Place COD order · ' + money(quote.total)
+                : 'Choose delivery details'}
+            <LockKeyhole size={16} />
+          </button>
+        </form>
+        <aside className="panel checkout-summary">
+          <h2>Your selection</h2>
+          {(quote?.items || cart.cartItems).map((i) => (
+            <div className="summary-item" key={(i.product || i.id) + i.color + i.size}>
+              <img src={i.image || i.images?.[0]} alt={i.title || i.name} />
+              <div>
+                <strong>{i.title || i.name}</strong>
+                <p>
+                  {i.color} / {i.size} / Qty {i.quantity}
+                </p>
+                <span>{money(i.price * i.quantity)}</span>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          ))}
+          <div className="summary-totals">
+            <div className="row between">
+              <span>Subtotal</span>
+              <strong>{money(quote?.subtotal ?? cart.subtotal)}</strong>
+            </div>
+            <div className="row between">
+              <span>Shipping</span>
+              <span>
+                {quoting ? 'Calculating…' : quote ? money(quote.shippingFee) : 'Choose governorate'}
+              </span>
+            </div>
+            <div className="row between grand-total">
+              <span>Total</span>
+              <strong>{quote ? money(quote.total) : '—'}</strong>
+            </div>
+          </div>
+          <Notice error={quoteError} />
+          {quoteError && (
+            <>
+              <button className="text-link" onClick={() => setRefresh((n) => n + 1)}>
+                Refresh summary
+              </button>
+              <p>
+                <Link className="text-link" to="/contact">
+                  Contact us about delivery
+                </Link>
+              </p>
+            </>
+          )}
+          <button
+            type="button"
+            className="text-link space-top"
+            disabled={quoting}
+            onClick={() => {
+              setError('');
+              setRefresh((n) => n + 1);
+            }}
+          >
+            Refresh prices & shipping
+          </button>
+          <Status loading={store.loading} error={store.error} retry={store.refresh} />
+          <p className="muted small">
+            Prices and availability are checked before your order is saved.
+          </p>
+        </aside>
+      </div>
     </PageTransition>
   );
-};
-
-export default Checkout;
+}

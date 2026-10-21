@@ -2,143 +2,91 @@ import User from '../models/User.js';
 import PasswordResetRequest from '../models/PasswordResetRequest.js';
 import { generateToken, getJWTSecret } from '../utils/jwt.js';
 import { checkDBStatus } from '../config/db.js';
-
-const publicUser = (user) => ({
-  id: user._id, name: user.name, email: user.email, mobile: user.mobile,
-  role: user.role, addresses: user.addresses,
+import * as v from '../utils/validation.js';
+export const publicUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  mobile: user.mobile,
+  role: user.role,
+  addresses: user.addresses,
+  createdAt: user.createdAt,
 });
-const unavailable = (res) => res.status(503).json({ success: false, message: 'Account service temporarily unavailable. Please try again shortly.' });
-
-export const register = async (req, res) => {
+export const sessionFor = (user) => ({
+  token: generateToken({ id: user._id, version: user.tokenVersion || 0 }),
+  user: publicUser(user),
+});
+const unavailable = (res) =>
+  res.status(503).json({
+    success: false,
+    message: 'Account service temporarily unavailable. Please try again shortly.',
+  });
+export const register = async (req, res, next) => {
   try {
-    const { name, email, password, mobile } = req.body || {};
-    if ([name, email, password, mobile].some(value => typeof value !== 'string' || !value.trim()) ||
-        name.trim().length > 100 || email.length > 254 || !/^\S+@\S+\.\S+$/.test(email.trim()) ||
-        !/^[+()\d\s-]{7,25}$/.test(mobile.trim()) || password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
-      return res.status(400).json({ success: false, message: 'Enter your name, a valid email and phone number, and a password of at least 8 characters (maximum 72 bytes).' });
-    }
-    if (!checkDBStatus().isReady) return unavailable(res);
-    getJWTSecret();
-    const normalizedEmail = email.trim().toLowerCase();
-    if (await User.exists({ email: normalizedEmail })) {
-      return res.status(409).json({ success: false, message: 'An account with this email already exists. Please log in.' });
-    }
-    const user = await User.create({ name: name.trim(), email: normalizedEmail, password, mobile: mobile.trim(), role: 'customer' });
-    const token = generateToken({ id: user._id, role: user.role, email: user.email });
-    return res.status(201).json({ success: true, message: 'Account created successfully.', token, user: publicUser(user) });
-  } catch (error) {
-    if (error.code === 11000) return res.status(409).json({ success: false, message: 'An account with this email already exists. Please log in.' });
-    if (error.name === 'ValidationError') return res.status(400).json({ success: false, message: 'Please check your account details.' });
-    return unavailable(res);
-  }
-};
-
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body || {};
-    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password || email.length > 254 || Buffer.byteLength(password, 'utf8') > 72) {
-      return res.status(400).json({ success: false, message: 'Please enter your email and password.' });
-    }
-    if (!checkDBStatus().isReady) return unavailable(res);
-    getJWTSecret();
-    const user = await User.findOne({ email: email.trim().toLowerCase() });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
-    }
-    if (user.isDeleted || user.isBanned) {
-      return res.status(403).json({ success: false, message: 'This account is unavailable. Please contact Mazhari support.' });
-    }
-    const token = generateToken({ id: user._id, role: user.role, email: user.email });
-    return res.json({ success: true, message: 'Login successful.', token, user: publicUser(user) });
-  } catch {
-    return unavailable(res);
-  }
-};
-
-/**
- * Request password reset (Creates admin notification with email & mobile)
- * POST /api/auth/forgot-password
- */
-export const forgotPassword = async (req, res) => {
-  try {
-    const { identifier } = req.body; // Can be email or mobile
-
-    if (!identifier) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide your registered email address or mobile phone number.',
-      });
-    }
-
-    const db = checkDBStatus();
-
-    if (!db.isReady) {
-      return res.status(200).json({
-        success: true,
-        message:
-          'Your password reset request has been received. Our administration team has been notified and will verify your mobile number to reset your password.',
-      });
-    }
-
-    const query = {
-      $or: [
-        { email: identifier.trim().toLowerCase() },
-        { mobile: identifier.trim() },
-      ],
+    const body = req.body || {};
+    const data = {
+      name: v.text(body.name, 'name', 100),
+      email: v.email(body.email),
+      mobile: v.phone(body.mobile),
+      password: v.password(body.password),
     };
-
-    const user = await User.findOne(query);
-
-    if (!user) {
-      // Security practice: Don't explicitly reveal non-existence, but inform customer
-      return res.status(200).json({
-        success: true,
-        message:
-          'If an account matches our records, a reset request notification has been sent to our administration team.',
+    if (!checkDBStatus().isReady) return unavailable(res);
+    getJWTSecret();
+    if (await User.exists({ email: data.email }))
+      return res.status(409).json({
+        success: false,
+        message: 'An account with this email already exists. Please log in.',
       });
-    }
-
-    if (user.isBanned) {
+    const user = await User.create({ ...data, role: 'customer' });
+    res.status(201).json({ success: true, ...sessionFor(user) });
+  } catch (error) {
+    if (error.code === 11000)
+      return res.status(409).json({
+        success: false,
+        message: 'An account with this email already exists. Please log in.',
+      });
+    if (next) next(error);
+    else res.status(error.status || 500).json({ success: false, message: error.message });
+  }
+};
+export const login = async (req, res, next) => {
+  try {
+    const email = v.email(req.body?.email);
+    if (
+      typeof req.body?.password !== 'string' ||
+      !req.body.password ||
+      Buffer.byteLength(req.body.password) > 72
+    )
+      v.fail(400, 'Enter your email and password.');
+    if (!checkDBStatus().isReady) return unavailable(res);
+    const user = await User.findOne({ email });
+    if (!user || !(await user.comparePassword(req.body.password)))
+      v.fail(401, 'Invalid email or password.');
+    if (user.isBanned) v.fail(403, 'This account is suspended. Please contact support.');
+    if (user.isDeleted)
       return res.status(403).json({
         success: false,
-        message: 'Cannot request password reset for a suspended account. Please contact Mazhari support.',
+        message: 'This account is deleted. Use Restore account to reactivate it.',
+        canRestore: true,
       });
-    }
-
-    // Check for existing pending request to prevent spamming
-    const existingPending = await PasswordResetRequest.findOne({
-      user: user._id,
-      status: 'pending',
-    });
-
-    if (existingPending) {
-      return res.status(200).json({
-        success: true,
-        message:
-          'A reset request for this account is already pending with our administration team. You will be contacted shortly.',
-      });
-    }
-
-    // Create the admin notification record
-    const resetRequest = new PasswordResetRequest({
-      user: user._id,
-      email: user.email,
-      mobile: user.mobile,
-      status: 'pending',
-    });
-
-    await resetRequest.save();
-
-    res.status(200).json({
-      success: true,
-      message:
-        'Your password reset request has been sent to the Mazhari administration. An admin will review your account information and assist you with your new password.',
-    });
+    res.json({ success: true, ...sessionFor(user) });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to submit password reset request.',
-      error: error.message,
-    });
+    if (next) next(error);
+    else res.status(error.status || 500).json({ success: false, message: error.message });
   }
+};
+export const forgotPassword = async (req, res) => {
+  const identifier = v.text(req.body?.identifier, 'email or mobile number', 254);
+  const user = await User.findOne({
+    $or: [{ email: identifier.toLowerCase() }, { mobile: identifier }],
+  });
+  if (user && !user.isBanned && !user.isDeleted) {
+    if (!(await PasswordResetRequest.exists({ user: user._id, status: 'pending' })))
+      await PasswordResetRequest.create({ user: user._id, email: user.email, mobile: user.mobile });
+  }
+  res.json({
+    success: true,
+    message:
+      'If an eligible account matches, your request is in our support inbox. Our team will contact you using the registered mobile number.',
+  });
 };

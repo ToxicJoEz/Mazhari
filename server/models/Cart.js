@@ -14,7 +14,7 @@ const CartItemSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 },
     image: { type: String, default: '' },
   },
-  { _id: true }
+  { _id: true },
 );
 
 const CartSchema = new mongoose.Schema(
@@ -27,10 +27,12 @@ const CartSchema = new mongoose.Schema(
       index: true,
     },
     items: [CartItemSchema],
+    mergeKeys: { type: [String], default: [] },
+    revision: { type: Number, default: 0 },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.models.Cart || mongoose.model('Cart', CartSchema);

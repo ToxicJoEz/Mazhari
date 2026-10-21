@@ -1,57 +1,48 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-
-const Footer = () => {
+import { ArrowUpRight } from 'lucide-react';
+const year = new Date().getFullYear();
+export default function Footer() {
   return (
-    <footer className="footer-container">
-      <div className="footer-inner w-full">
-        <div className="footer-grid grid grid-cols-1 md:grid-cols-4">
-          <div className="brand-section col-span-1 md:col-span-2">
-            <h2 className="logo">Mazhari</h2>
-            <p className="brand-desc">
-              Defining the modern silhouette. Heavyweight fabrics, meticulous cuts, and an uncompromising approach to quality.
-            </p>
-            <form className="subscribe-form flex">
-              <input 
-                type="email" 
-                placeholder="Join the Atelier (Email Address)" 
-                className="flex-grow"
-              />
-              <button type="submit">Subscribe</button>
-            </form>
-          </div>
-          
-          <div className="links-section">
-            <h3>Explore</h3>
-            <ul className="flex flex-col gap-4">
-              <li><Link to="/shop">Shop All</Link></li>
-              <li><Link to="/collections">Collections</Link></li>
-              <li><Link to="/lookbook">Lookbook</Link></li>
-              <li><Link to="/about">Our Story</Link></li>
-            </ul>
-          </div>
-
-          <div className="links-section">
-            <h3>Client Services</h3>
-            <ul className="flex flex-col gap-4">
-              <li><Link to="/contact">Contact Us</Link></li>
-              <li><Link to="/shipping">Shipping & Returns</Link></li>
-              <li><Link to="/sizing">Size Guide</Link></li>
-              <li><Link to="/terms">Terms & Conditions</Link></li>
-            </ul>
-          </div>
+    <footer className="store-footer">
+      <div className="footer-top">
+        <div>
+          <Link to="/" className="wordmark">
+            MAZHARI
+          </Link>
+          <p>
+            Considered silhouettes.
+            <br />A distinctive point of view.
+          </p>
         </div>
-
-        <div className="footer-bottom flex flex-col md:flex-row justify-between items-center">
-          <p>&copy; 2026 Mazhari. All rights reserved.</p>
-          <div className="social-links flex">
-            <a href="#">Instagram</a>
-            <a href="#">Twitter</a>
-          </div>
+        <div>
+          <h3>Explore</h3>
+          <Link to="/shop">
+            Shop all <ArrowUpRight size={14} />
+          </Link>
+          <Link to="/collections">Collections</Link>
+          <Link to="/about">Our story</Link>
+        </div>
+        <div>
+          <h3>Here to help</h3>
+          <Link to="/contact">Contact us</Link>
+          <Link to="/shipping">Delivery & store policy</Link>
+          <Link to="/size-guide">Size guide</Link>
+          <Link to="/track">Track a guest order</Link>
+        </div>
+        <div>
+          <h3>Your account</h3>
+          <Link to="/profile">My account</Link>
+          <Link to="/orders">My orders</Link>
+          <Link to="/forgot-password">Password support</Link>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <span>© {year} Mazhari. All prices in EGP.</span>
+        <div>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

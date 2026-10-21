@@ -1,101 +1,107 @@
-import React from 'react';
-import { X, Minus, Plus, ShoppingBag } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useCart } from '../context/CartContext';
-import { AnimatePresence, motion } from 'framer-motion';
-
-const CartDrawer = () => {
-  const { isDrawerOpen, closeDrawer, cartItems, updateQuantity, removeFromCart, subtotal, totalShipping } = useCart();
+import { Link, useNavigate } from 'react-router-dom';
+import { Minus, Plus, ShoppingBag } from 'lucide-react';
+import { useCart } from '../context/cart';
+import { useAuth } from '../context/auth';
+import { Modal, Notice } from './UI';
+import { money } from '../lib/store';
+export default function CartDrawer() {
+  const cart = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  const handleCheckout = () => {
-    closeDrawer();
-    navigate('/checkout');
-  };
-
+  if (!cart.isDrawerOpen) return null;
   return (
-    <AnimatePresence>
-      {isDrawerOpen && (
-        <>
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            exit={{ opacity: 0 }}
-            className="cart-overlay fixed inset-0 z-40"
-            onClick={closeDrawer}
-          />
-          <motion.div 
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'tween', duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="cart-drawer fixed top-0 right-0 h-full w-full md:w-[420px] z-50 flex flex-col"
-          >
-            <div className="cart-header flex justify-between items-center">
-              <h2>Your Selection</h2>
-              <button onClick={closeDrawer} className="close-btn" aria-label="Close cart">
-                <X size={22} />
-              </button>
-            </div>
-
-            <div className="cart-body flex-grow overflow-y-auto flex flex-col gap-6">
-              {cartItems.length === 0 ? (
-                <div className="empty-cart h-full flex flex-col items-center justify-center gap-4">
-                  <ShoppingBag size={48} strokeWidth={1} />
-                  <p>Your cart is empty.</p>
-                </div>
-              ) : (
-                cartItems.map((item) => (
-                  <div key={`${item.id}-${item.size}-${item.color}`} className="cart-item flex gap-4">
-                    <img src={item.images[0]} alt={item.name} className="item-img" />
-                    <div className="item-details flex flex-col justify-between flex-grow">
-                      <div>
-                        <h3>{item.name}</h3>
-                        <p className="item-variant">Color: {item.color} · Size: {item.size}</p>
-                        <p className="item-shipping">Shipping: ${item.shippingFee}</p>
-                        <p className="item-price">${item.price}</p>
-                      </div>
-                      <div className="item-actions flex justify-between items-end">
-                        <div className="qty-controls flex items-center">
-                          <button onClick={() => updateQuantity(item.id, item.size, item.color, item.quantity - 1)}>
-                            <Minus size={14} />
-                          </button>
-                          <span>{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, item.size, item.color, item.quantity + 1)}>
-                            <Plus size={14} />
-                          </button>
-                        </div>
-                        <button onClick={() => removeFromCart(item.id, item.size, item.color)} className="remove-btn">
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {cartItems.length > 0 && (
-              <div className="cart-footer">
-                <div className="subtotal flex justify-between items-center">
-                  <span className="label">Item Subtotal</span>
-                  <span className="value">${subtotal}</span>
-                </div>
-                <div className="shipping-row flex justify-between items-center">
-                  <span className="label">Est. Shipping</span>
-                  <span className="value">${totalShipping}</span>
-                </div>
-                <p className="shipping-note">Payment is collected by our concierge via WhatsApp.</p>
-                <button onClick={handleCheckout} className="checkout-btn w-full">
-                  Proceed to Request · ${subtotal + totalShipping}
-                </button>
-              </div>
-            )}
-          </motion.div>
-        </>
+    <Modal title={'Your bag (' + cart.totalItems + ')'} onClose={cart.closeDrawer} drawer>
+      <Notice error={cart.error} notice={cart.notice} />
+      {!cart.ready && (
+        <button className="btn secondary" onClick={cart.retryCart}>
+          Reload bag
+        </button>
       )}
-    </AnimatePresence>
+      <div className="bag-items">
+        {!cart.cartItems.length ? (
+          <div className="state-panel">
+            <ShoppingBag size={40} />
+            <h3>A little room for something good.</h3>
+            <Link to="/shop" onClick={cart.closeDrawer} className="text-link">
+              Discover the collection
+            </Link>
+          </div>
+        ) : (
+          cart.cartItems.map((i) => (
+            <article className="bag-item" key={i.id + i.size + i.color}>
+              <img src={i.images[0]} alt={i.name} />
+              <div>
+                <Link to={'/product/' + i.id} onClick={cart.closeDrawer}>
+                  {i.name}
+                </Link>
+                <p>
+                  {i.color} / {i.size}
+                </p>
+                <strong>{money(i.price)}</strong>
+                <div className="row between">
+                  <div className="quantity">
+                    <button
+                      aria-label={'Decrease quantity of ' + i.name}
+                      disabled={cart.pending || !cart.ready || i.quantity <= 1}
+                      onClick={() => cart.updateQuantity(i.id, i.size, i.color, i.quantity - 1)}
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span>{i.quantity}</span>
+                    <button
+                      aria-label={'Increase quantity of ' + i.name}
+                      disabled={
+                        cart.pending ||
+                        !cart.ready ||
+                        i.quantity >= Math.min(i.availableStock || 50, 50)
+                      }
+                      onClick={() => cart.updateQuantity(i.id, i.size, i.color, i.quantity + 1)}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                  <button
+                    className="text-link muted"
+                    disabled={cart.pending || !cart.ready}
+                    onClick={() => cart.removeFromCart(i.id, i.size, i.color)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+      {cart.cartItems.length > 0 && (
+        <div className="bag-bottom">
+          <div className="row between">
+            <span>Subtotal</span>
+            <strong>{money(cart.subtotal)}</strong>
+          </div>
+          <p className="muted">
+            Shipping calculated for your governorate at checkout. Pay cash on delivery.
+          </p>
+          {!user && (
+            <p className="muted">
+              <Link to="/login?next=/checkout" onClick={cart.closeDrawer} className="text-link">
+                Sign in
+              </Link>{' '}
+              or create an account to save your bag.
+            </p>
+          )}
+          <button
+            className="btn wide"
+            disabled={cart.pending || !cart.ready}
+            onClick={() => {
+              cart.closeDrawer();
+              navigate('/checkout');
+            }}
+          >
+            Continue to checkout
+          </button>
+        </div>
+      )}
+    </Modal>
   );
-};
-
-export default CartDrawer;
+}

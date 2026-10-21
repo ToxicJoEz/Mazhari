@@ -31,12 +31,13 @@ export const mockProducts = [
     shippingFee: 15,
     colors: ['Noir Black', 'Desert Taupe', 'Rose Dust'],
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    description: 'A striking statement silhouette defined by cascading hand-cut fringe accents along the back and sleeves. Tailored from supple, full-grain leather with dark gunmetal hardware and a relaxed modern crop.',
+    description:
+      'A striking statement silhouette defined by cascading hand-cut fringe accents along the back and sleeves. Tailored from supple, full-grain leather with dark gunmetal hardware and a relaxed modern crop.',
     images: [fringesJacket1, fringesJacket2, fringesJacket3],
     material: '100% Genuine Soft Lambskin & Hand-Cut Fringe',
     care: 'Specialist leather clean only. Avoid prolonged moisture exposure.',
     stock: 4,
-    category: 'Outerwear'
+    category: 'Outerwear',
   },
   {
     id: 'fur-jacket',
@@ -45,12 +46,13 @@ export const mockProducts = [
     shippingFee: 20,
     colors: ['Soft Ecru', 'Midnight Onyx', 'Blush Tint'],
     sizes: ['S', 'M', 'L'],
-    description: 'Architectural warmth meets high-fashion opulence. Designed in an enveloping cocoon cut from ultra-dense plush fur, complete with an oversized storm collar and concealed horn-button fasteners.',
+    description:
+      'Architectural warmth meets high-fashion opulence. Designed in an enveloping cocoon cut from ultra-dense plush fur, complete with an oversized storm collar and concealed horn-button fasteners.',
     images: [furJacket1, furJacket2, furJacket3],
     material: 'Ultra-Dense Heavyweight Faux Fur with Tonal Silk Lining',
     care: 'Professional dry clean only. Store in breathable garment bag.',
     stock: 2,
-    category: 'Outerwear'
+    category: 'Outerwear',
   },
   {
     id: 'scarf-jacket',
@@ -59,12 +61,13 @@ export const mockProducts = [
     shippingFee: 15,
     colors: ['Charcoal Heather', 'Oatmeal Melange', 'Deep Plum'],
     sizes: ['S', 'M', 'L', 'XL'],
-    description: 'Effortless luxury in motion. Features a seamlessly attached fringe scarf that can be draped over the shoulder or wrapped high around the neckline. Hand-finished double-faced wool ensures light yet insulated comfort.',
+    description:
+      'Effortless luxury in motion. Features a seamlessly attached fringe scarf that can be draped over the shoulder or wrapped high around the neckline. Hand-finished double-faced wool ensures light yet insulated comfort.',
     images: [scarfJacket1, scarfJacket2, scarfJacket3],
     material: 'Double-Faced Wool Blend (85% Virgin Wool, 15% Cashmere)',
     care: 'Dry clean only. Cool iron under pressing cloth.',
     stock: 5,
-    category: 'Outerwear'
+    category: 'Outerwear',
   },
   {
     id: 'semi-formal-jacket',
@@ -73,12 +76,13 @@ export const mockProducts = [
     shippingFee: 15,
     colors: ['Obsidian Black', 'Smoky Mauve', 'Chalk Pinstripe'],
     sizes: ['38', '40', '42', '44'],
-    description: 'Bridging the divide between formal tailoring and rebellious contemporary outerwear. Features sculpted power shoulders, an asymmetric lapel, and a tapered waist with precision internal piping.',
+    description:
+      'Bridging the divide between formal tailoring and rebellious contemporary outerwear. Features sculpted power shoulders, an asymmetric lapel, and a tapered waist with precision internal piping.',
     images: [semiFormal1, semiFormal2, semiFormal3, semiFormal4],
     material: 'Structured Italian Wool Suiting with Silk Jacquard Interior',
     care: 'Dry clean only.',
     stock: 3,
-    category: 'Outerwear'
+    category: 'Outerwear',
   },
   {
     id: 'suede-jacket',
@@ -87,11 +91,12 @@ export const mockProducts = [
     shippingFee: 18,
     colors: ['Tobacco Brown', 'Smoked Olive', 'Pitch Black'],
     sizes: ['S', 'M', 'L', 'XL'],
-    description: 'Constructed from rich, tactile heavyweight suede that develops a unique vintage patina over time. Finished with custom matte snap buttons, dual chest envelope pockets, and adjustable waist tabs.',
+    description:
+      'Constructed from rich, tactile heavyweight suede that develops a unique vintage patina over time. Finished with custom matte snap buttons, dual chest envelope pockets, and adjustable waist tabs.',
     images: [suedeJacket1, suedeJacket2, suedeJacket3],
     material: '100% Heavyweight Suede Calfskin with Quilted Insulation',
     care: 'Specialist suede and leather clean only.',
     stock: 6,
-    category: 'Outerwear'
-  }
+    category: 'Outerwear',
+  },
 ];

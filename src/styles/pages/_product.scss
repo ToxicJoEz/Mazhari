@@ -9,14 +9,24 @@
   min-height: 100vh;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
-  
-  @media (min-width: 768px) { padding-top: 8rem; }
-  @media (min-width: 640px) { padding-left: 2rem; padding-right: 2rem; }
-  @media (min-width: 1024px) { padding-left: 2.5rem; padding-right: 2.5rem; }
+
+  @media (min-width: 768px) {
+    padding-top: 8rem;
+  }
+  @media (min-width: 640px) {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  @media (min-width: 1024px) {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
 
   .product-layout {
     gap: 3rem;
-    @media (min-width: 1024px) { gap: 4.5rem; }
+    @media (min-width: 1024px) {
+      gap: 4.5rem;
+    }
   }
 
   // Gallery Section with Main Image & Thumbnails
@@ -29,18 +39,18 @@
       border: 1px solid $border-color;
       margin-bottom: 1rem;
       box-shadow: $shadow-sm;
-      
+
       img {
         width: 100%;
         height: 100%;
         object-fit: cover;
       }
     }
-    
+
     .thumbs-strip {
       gap: 0.75rem;
       padding-bottom: 0.5rem;
-      
+
       .thumb-btn {
         width: 5.5rem;
         height: 7rem;
@@ -51,17 +61,17 @@
         transition: $transition-soft;
         padding: 0;
         cursor: pointer;
-        
+
         img {
           width: 100%;
           height: 100%;
           object-fit: cover;
         }
-        
+
         &:hover {
           border-color: $border-light;
         }
-        
+
         &.active {
           border-color: $accent-color;
           box-shadow: 0 0 12px $accent-color;
@@ -70,7 +80,9 @@
     }
   }
 
-  .info-sticky { top: 7.5rem; }
+  .info-sticky {
+    top: 7.5rem;
+  }
 
   .info-section {
     h1 {
@@ -81,14 +93,14 @@
       margin-bottom: 0.5rem;
       line-height: 1.2;
     }
-    
+
     .price {
       font-size: 1.5rem;
       font-weight: 500;
       margin-bottom: 1.5rem;
       color: $accent-color;
     }
-    
+
     .description {
       color: $text-secondary;
       font-weight: 300;
@@ -101,22 +113,22 @@
   // Color Selector
   .color-selector {
     margin-bottom: 1.75rem;
-    
+
     .color-header {
       margin-bottom: 0.75rem;
-      
+
       .label {
         letter-spacing: 0.03em;
         font-size: 0.8125rem;
         color: $text-secondary;
-        
+
         strong {
           color: $text-primary;
           font-weight: 500;
         }
       }
     }
-    
+
     .color-grid {
       .color-btn {
         padding: 0.5rem 1.125rem;
@@ -126,12 +138,12 @@
         background-color: rgba(255, 255, 255, 0.02);
         color: $text-secondary;
         transition: $transition-soft;
-        
+
         &:hover {
           border-color: $accent-color;
           color: $text-primary;
         }
-        
+
         &.selected {
           border-color: $accent-color;
           background-color: $accent-soft;
@@ -146,21 +158,21 @@
   // Size Selector
   .size-selector {
     margin-bottom: 1.75rem;
-    
+
     .size-header {
       margin-bottom: 0.75rem;
-      
+
       .label {
         letter-spacing: 0.03em;
         font-size: 0.8125rem;
         color: $text-secondary;
-        
+
         strong {
           color: $text-primary;
           font-weight: 500;
         }
       }
-      
+
       .guide-btn {
         letter-spacing: 0.03em;
         font-size: 0.75rem;
@@ -168,14 +180,16 @@
         text-decoration: underline;
         text-underline-offset: 4px;
         transition: color 0.2s;
-        
-        &:hover { color: $text-primary; }
+
+        &:hover {
+          color: $text-primary;
+        }
       }
     }
-    
+
     .size-grid {
       gap: 0.75rem;
-      
+
       .size-btn {
         padding: 0.75rem 0;
         border: 1px solid $border-color;
@@ -185,12 +199,12 @@
         font-size: 0.875rem;
         font-weight: 500;
         transition: $transition-soft;
-        
+
         &:hover {
           border-color: $accent-color;
           color: $accent-color;
         }
-        
+
         &.selected {
           border-color: $accent-color;
           background: linear-gradient(135deg, $accent-color 0%, $accent-hover 100%);
@@ -209,19 +223,19 @@
     border-radius: $radius-lg;
     padding: 0.875rem 1.125rem;
     margin-bottom: 1.75rem;
-    
+
     .shipping-icon {
       color: #34d399;
       flex-shrink: 0;
     }
-    
+
     .fee-highlight {
       font-size: 0.8125rem;
       font-weight: 500;
       color: $text-primary;
       display: block;
     }
-    
+
     .fee-desc {
       font-size: 0.75rem;
       color: $text-muted;
@@ -238,7 +252,7 @@
     margin-bottom: 1.25rem;
     font-weight: 500;
     gap: 0.5rem;
-    
+
     .dot {
       width: 0.5rem;
       height: 0.5rem;
@@ -246,7 +260,7 @@
       background-color: $accent-color;
       box-shadow: 0 0 10px $accent-color;
     }
-    
+
     .dot-inner {
       border-radius: $radius-full;
       background-color: $accent-color;
@@ -265,7 +279,7 @@
     box-shadow: $shadow-sm;
     transition: $transition-soft;
     margin-bottom: 2.25rem;
-    
+
     &:hover {
       transform: translateY(-1px);
       box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
@@ -274,10 +288,10 @@
 
   .accordions {
     border-top: 1px solid $border-color;
-    
+
     .accordion-item {
       border-bottom: 1px solid $border-color;
-      
+
       .accordion-header {
         padding: 1.125rem 0;
         letter-spacing: 0.04em;
@@ -285,19 +299,19 @@
         font-weight: 500;
         color: $text-primary;
         transition: color 0.2s ease;
-        
+
         &:hover {
           color: $accent-color;
         }
       }
-      
+
       .accordion-inner {
         padding-bottom: 1.25rem;
         font-size: 0.875rem;
         color: $text-secondary;
         font-weight: 300;
         line-height: 1.7;
-        
+
         .margin-top {
           margin-top: 0.5rem;
         }

@@ -8,7 +8,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  
+
   h1 {
     font-size: 5rem;
     font-family: $font-serif;
@@ -18,14 +18,14 @@
     letter-spacing: 0.04em;
     text-shadow: $shadow-glow;
   }
-  
+
   p {
     color: $text-secondary;
     margin-bottom: 2.25rem;
     font-size: 1.0625rem;
     font-weight: 300;
   }
-  
+
   .home-btn {
     display: inline-block;
     background: linear-gradient(135deg, $accent-color 0%, $accent-hover 100%);
@@ -37,7 +37,7 @@
     font-weight: 600;
     box-shadow: $shadow-glow;
     transition: $transition-soft;
-    
+
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 0 32px rgba(244, 114, 182, 0.4);

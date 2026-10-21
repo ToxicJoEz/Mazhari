@@ -1,78 +1,33 @@
-import express from 'express';
-import {
-  // Password requests & manual reset
-  getPasswordRequests,
-  fulfillPasswordRequest,
-  setUserPasswordManually,
-  // User management
-  getAllUsers,
-  getUserById,
-  updateUser,
-  banUser,
-  unbanUser,
-  softDeleteUser,
-  restoreUser,
-  // Product & Inventory
-  getAllProductsAdmin,
-  createProduct,
-  updateProduct,
-  updateProductStock,
-  softDeleteProduct,
-  restoreProduct,
-  uploadImagePlaceholder,
-  // Orders & COD
-  getAllOrders,
-  updateOrderStatus,
-  updatePaymentStatus,
-  // Analytics
-  getOverviewMetrics,
-} from '../controllers/adminController.js';
+import { Router } from 'express';
+import * as c from '../controllers/adminController.js';
+import * as s from '../controllers/storeController.js';
+import * as o from '../controllers/orderController.js';
 import { verifyToken, isAdmin } from '../middleware/authMiddleware.js';
-
-const router = express.Router();
-
-// Strict security: ALL admin routes require valid JWT and admin role
-router.use(verifyToken, isAdmin);
-
-// ==========================================
-// 1. DASHBOARD ANALYTICS
-// ==========================================
-router.get('/metrics', getOverviewMetrics);
-
-// ==========================================
-// 2. PASSWORD RESET NOTIFICATIONS & ACTIONS
-// ==========================================
-router.get('/password-requests', getPasswordRequests);
-router.post('/password-requests/:id/fulfill', fulfillPasswordRequest);
-router.post('/users/:id/set-password', setUserPasswordManually);
-
-// ==========================================
-// 3. USER MANAGEMENT (ACCOUNTS, BAN, DELETE)
-// ==========================================
-router.get('/users', getAllUsers);
-router.get('/users/:id', getUserById);
-router.put('/users/:id', updateUser);
-router.patch('/users/:id/ban', banUser);
-router.patch('/users/:id/unban', unbanUser);
-router.delete('/users/:id', softDeleteUser);
-router.patch('/users/:id/restore', restoreUser);
-
-// ==========================================
-// 4. INVENTORY & PRODUCT MANAGEMENT
-// ==========================================
-router.get('/products', getAllProductsAdmin);
-router.post('/products', createProduct);
-router.put('/products/:id', updateProduct);
-router.patch('/products/:id/stock', updateProductStock);
-router.delete('/products/:id', softDeleteProduct);
-router.patch('/products/:id/restore', restoreProduct);
-router.post('/products/upload', uploadImagePlaceholder);
-
-// ==========================================
-// 5. ORDER MANAGEMENT & CASH-ON-DELIVERY
-// ==========================================
-router.get('/orders', getAllOrders);
-router.patch('/orders/:id/status', updateOrderStatus);
-router.patch('/orders/:id/payment', updatePaymentStatus);
-
-export default router;
+import { route } from '../utils/validation.js';
+const r = Router();
+r.use(verifyToken, isAdmin);
+r.get('/metrics', route(c.getOverviewMetrics));
+r.get('/settings', route(s.publicSettings));
+r.put('/settings', route(s.updateSettings));
+r.get('/inquiries', route(s.getInquiries));
+r.patch('/inquiries/:id/resolve', route(s.resolveInquiry));
+r.get('/password-requests', route(c.getPasswordRequests));
+r.post('/password-requests/:id/fulfill', route(c.fulfillPasswordRequest));
+r.post('/users/:id/set-password', route(c.setUserPasswordManually));
+r.get('/users', route(c.getAllUsers));
+r.get('/users/:id', route(c.getUserById));
+r.put('/users/:id', route(c.updateUser));
+r.patch('/users/:id/ban', route(c.banUser));
+r.patch('/users/:id/unban', route(c.unbanUser));
+r.delete('/users/:id', route(c.softDeleteUser));
+r.patch('/users/:id/restore', route(c.restoreUser));
+r.get('/products', route(c.getAllProductsAdmin));
+r.post('/products', route(c.createProduct));
+r.put('/products/:id', route(c.updateProduct));
+r.patch('/products/:id/stock', route(c.updateProductStock));
+r.delete('/products/:id', route(c.softDeleteProduct));
+r.patch('/products/:id/restore', route(c.restoreProduct));
+r.get('/orders', route(c.getAllOrders));
+r.patch('/orders/:id/status', route(o.updateOrderStatus));
+r.patch('/orders/:id/payment', route(o.updatePaymentStatus));
+export default r;

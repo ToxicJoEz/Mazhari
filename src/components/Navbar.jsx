@@ -1,110 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Menu, X } from 'lucide-react';
+import { useState } from 'react';
+import { NavLink, Link } from 'react-router-dom';
+import { ShoppingBag, Menu, X, UserRound } from 'lucide-react';
+import { useCart } from '../context/cart';
 import { useAuth } from '../context/auth';
-import { useCart } from '../context/CartContext';
-import { motion, AnimatePresence } from 'framer-motion';
-
-const Navbar = () => {
+import { useStore } from '../context/store';
+export default function Navbar() {
   const { totalItems, toggleDrawer } = useCart();
-  const { user, loading, token } = useAuth();
-  const accountLink = user || (loading && token) ? "/profile" : "/login";
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
-  const isHomePage = location.pathname === '/';
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-
-
+  const { user } = useAuth();
+  const { settings } = useStore();
+  const [open, setOpen] = useState(false);
   return (
-    <nav className={`navbar fixed w-full top-0 left-0 z-50 ${isScrolled || !isHomePage ? 'scrolled' : 'transparent'}`}>
-      <div className="nav-container w-full">
-        <div className="nav-inner grid grid-cols-3 items-center w-full">
-          
-          {/* Left Navigation Links */}
-          <div className="nav-left flex items-center justify-start gap-6">
-            <button 
-              className="menu-btn block md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Toggle navigation menu"
-            >
-              {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-            <div className="nav-links hidden md:flex gap-8">
-              <NavLink to="/" end className="nav-link">Home</NavLink>
-              <NavLink to="/shop" className="nav-link">Shop</NavLink>
-              <NavLink to="/collections" className="nav-link">Collections</NavLink>
-            </div>
-          </div>
-
-          {/* Centered Logo */}
-          <div className="nav-center flex items-center justify-center">
-            <Link to="/" className="logo">Mazhari</Link>
-          </div>
-
-          {/* Right Action Buttons */}
-          <div className="nav-right flex items-center justify-end gap-6">
-            <Link to={accountLink} className="auth-btn hidden md:block">{user ? "My Account" : "Login / Register"}</Link>
-            <button 
-              className="cart-btn relative flex items-center justify-center" 
-              onClick={toggleDrawer}
-              aria-label="Shopping Cart"
-            >
-              <ShoppingBag size={20} />
-              <AnimatePresence>
-                {totalItems > 0 && (
-                  <motion.span 
-                    key={totalItems}
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.5, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="badge absolute flex items-center justify-center"
-                  >
-                    {totalItems}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-          </div>
-
-        </div>
+    <>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <div className="announcement">
+        {settings?.announcement || 'Cash on delivery · Across Egypt · Prices in EGP'}
       </div>
-
-      {/* Mobile Menu Dropdown */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="mobile-menu md:hidden flex flex-col gap-4 overflow-hidden"
+      <header className="store-nav">
+        <div className="nav-wrap">
+          <button
+            className="icon-btn mobile-only"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
           >
-            <NavLink to="/" end className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+            {open ? <X /> : <Menu />}
+          </button>
+          <nav className="desktop-links" aria-label="Main navigation">
+            <NavLink to="/" end>
               Home
             </NavLink>
-            <NavLink to="/shop" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
-              Shop
-            </NavLink>
-            <NavLink to="/collections" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
-              Collections
-            </NavLink>
-            <div className="mobile-divider w-full" />
-            <Link to={accountLink} className="mobile-auth-btn w-full" onClick={() => setIsMobileMenuOpen(false)}>{user ? "My Account" : "Login / Register"}</Link>
-          </motion.div>
+            <NavLink to="/shop">Shop</NavLink>
+            <NavLink to="/collections">Collections</NavLink>
+          </nav>
+          <Link to="/" className="wordmark">
+            MAZHARI<span>THE OUTERWEAR EDIT</span>
+          </Link>
+          <div className="nav-actions">
+            <Link
+              to={user ? '/profile' : '/login'}
+              className="icon-btn"
+              aria-label={user ? 'My account' : 'Sign in'}
+            >
+              <UserRound size={20} />
+              <span className="desktop-label">{user ? 'My account' : 'Sign in'}</span>
+            </Link>
+            <button
+              className="icon-btn bag-trigger"
+              onClick={toggleDrawer}
+              aria-label={'Open shopping bag, ' + totalItems + ' items'}
+            >
+              <ShoppingBag size={21} />
+              {totalItems > 0 && <span>{totalItems}</span>}
+            </button>
+          </div>
+        </div>
+        {open && (
+          <nav className="mobile-nav" aria-label="Mobile navigation" onClick={() => setOpen(false)}>
+            <NavLink to="/">Home</NavLink>
+            <NavLink to="/shop">Shop all</NavLink>
+            <NavLink to="/collections">Collections</NavLink>
+            <NavLink to="/track">Track an order</NavLink>
+            {user?.role === 'admin' && <NavLink to="/admin">Admin dashboard</NavLink>}
+          </nav>
         )}
-      </AnimatePresence>
-    </nav>
+      </header>
+    </>
   );
-};
-
-export default Navbar;
+}

@@ -14,7 +14,7 @@ const OrderItemSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 },
     image: { type: String, default: '' },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const OrderStatusHistorySchema = new mongoose.Schema(
@@ -36,11 +36,16 @@ const OrderStatusHistorySchema = new mongoose.Schema(
     changedBy: { type: String, default: 'system' },
     note: { type: String, default: '' },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const OrderSchema = new mongoose.Schema(
   {
+    policyAcceptedAt: { type: Date },
+    requestKey: { type: String, unique: true, sparse: true, select: false },
+    requestFingerprint: { type: String, select: false },
+    guestTokenHash: { type: String, select: false },
+    stockReserved: { type: Boolean, default: true },
     orderNumber: {
       type: String,
       required: true,
@@ -62,6 +67,7 @@ const OrderSchema = new mongoose.Schema(
     shippingAddress: {
       street: { type: String, required: true },
       city: { type: String, required: true },
+      governorate: { type: String, required: true },
       zip: { type: String, default: '' },
       notes: { type: String, default: '' },
     },
@@ -113,7 +119,7 @@ const OrderSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.models.Order || mongoose.model('Order', OrderSchema);

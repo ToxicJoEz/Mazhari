@@ -5,7 +5,7 @@
   padding-bottom: 6rem;
   min-height: 70vh;
   text-align: center;
-  
+
   h1 {
     font-size: 2rem;
     font-family: $font-serif;
@@ -13,7 +13,7 @@
     letter-spacing: 0.02em;
     margin-bottom: 1.5rem;
   }
-  
+
   .return-link {
     display: inline-block;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
@@ -22,7 +22,7 @@
     padding-bottom: 0.25rem;
     color: $text-secondary;
     transition: $transition-soft;
-    
+
     &:hover {
       color: $accent-color;
       border-color: $accent-color;
@@ -40,7 +40,7 @@
   text-align: center;
   padding-left: 1.5rem;
   padding-right: 1.5rem;
-  
+
   h1 {
     font-size: 2.5rem;
     font-family: $font-serif;
@@ -49,7 +49,7 @@
     margin-bottom: 1.25rem;
     color: $accent-color;
   }
-  
+
   p {
     color: $text-secondary;
     font-weight: 300;
@@ -57,7 +57,7 @@
     line-height: 1.75;
     font-size: 1.0625rem;
   }
-  
+
   .home-btn {
     display: inline-block;
     background: linear-gradient(135deg, #f5f5f7 0%, #e2e8f0 100%);
@@ -69,7 +69,7 @@
     font-weight: 600;
     box-shadow: $shadow-sm;
     transition: $transition-soft;
-    
+
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
@@ -86,14 +86,24 @@
   min-height: 100vh;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
-  
-  @media (min-width: 768px) { padding-top: 8rem; }
-  @media (min-width: 640px) { padding-left: 2rem; padding-right: 2rem; }
-  @media (min-width: 1024px) { padding-left: 2.5rem; padding-right: 2.5rem; }
+
+  @media (min-width: 768px) {
+    padding-top: 8rem;
+  }
+  @media (min-width: 640px) {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  @media (min-width: 1024px) {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
 
   .checkout-layout {
     gap: 3rem;
-    @media (min-width: 1024px) { gap: 5rem; }
+    @media (min-width: 1024px) {
+      gap: 5rem;
+    }
   }
 
   .form-section {
@@ -104,7 +114,7 @@
       letter-spacing: 0.02em;
       margin-bottom: 1.5rem;
     }
-    
+
     .intro-text {
       font-size: 0.9375rem;
       color: $text-secondary;
@@ -112,7 +122,7 @@
       font-weight: 300;
       line-height: 1.6;
     }
-    
+
     form {
       .section-title {
         letter-spacing: 0.04em;
@@ -122,15 +132,19 @@
         border-bottom: 1px solid $border-color;
         padding-bottom: 0.625rem;
         margin-bottom: 1.25rem;
-        
-        &.margin-top { margin-top: 2.5rem; }
+
+        &.margin-top {
+          margin-top: 2.5rem;
+        }
       }
-      
-      .input-group { gap: 1rem; }
-      
+
+      .input-group {
+        gap: 1rem;
+      }
+
       .input-field {
         margin-bottom: 1.25rem;
-        
+
         label {
           display: block;
           font-size: 0.75rem;
@@ -139,8 +153,9 @@
           margin-bottom: 0.5rem;
           font-weight: 500;
         }
-        
-        input, textarea {
+
+        input,
+        textarea {
           background-color: rgba(255, 255, 255, 0.02);
           border: 1px solid $border-color;
           border-radius: $radius-md;
@@ -149,17 +164,19 @@
           outline: none;
           transition: $transition-soft;
           font-size: 0.875rem;
-          
+
           &:focus {
             border-color: $accent-color;
             background-color: rgba(255, 255, 255, 0.04);
             box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
           }
         }
-        
-        textarea { resize: none; }
+
+        textarea {
+          resize: none;
+        }
       }
-      
+
       .submit-btn {
         background: linear-gradient(135deg, $accent-color 0%, $accent-hover 100%);
         color: #0b0b0e;
@@ -171,7 +188,7 @@
         box-shadow: $shadow-glow;
         transition: $transition-soft;
         margin-top: 2rem;
-        
+
         &:hover {
           transform: translateY(-2px);
           box-shadow: 0 0 32px rgba(244, 114, 182, 0.4);
@@ -186,11 +203,15 @@
     border-radius: $radius-xl;
     border: 1px solid $border-color;
     box-shadow: $shadow-md;
-    
-    @media (min-width: 768px) { padding: 2.25rem; }
-    
-    .summary-sticky { top: 7.5rem; }
-    
+
+    @media (min-width: 768px) {
+      padding: 2.25rem;
+    }
+
+    .summary-sticky {
+      top: 7.5rem;
+    }
+
     h2 {
       letter-spacing: 0.04em;
       font-size: 0.875rem;
@@ -198,14 +219,14 @@
       color: $text-primary;
       margin-bottom: 1.5rem;
     }
-    
+
     .summary-items {
       margin-bottom: 1.75rem;
-      
+
       .summary-item {
         gap: 1.125rem;
         margin-bottom: 1.25rem;
-        
+
         img {
           width: 4rem;
           height: 5.25rem;
@@ -214,12 +235,12 @@
           background-color: $bg-color;
           border: 1px solid $border-color;
         }
-        
+
         .item-header {
           font-size: 0.875rem;
           font-weight: 500;
         }
-        
+
         .item-meta {
           font-size: 0.75rem;
           color: $text-muted;
@@ -233,32 +254,40 @@
         }
       }
     }
-    
+
     .summary-totals {
       border-top: 1px solid $border-color;
       padding-top: 1.5rem;
       font-size: 0.875rem;
-      
+
       .total-row {
         margin-bottom: 0.875rem;
-        
-        .label { color: $text-secondary; }
-        .value { font-weight: 500; }
-        .calculated-note { font-style: italic; color: $text-muted; font-weight: 400; }
+
+        .label {
+          color: $text-secondary;
+        }
+        .value {
+          font-weight: 500;
+        }
+        .calculated-note {
+          font-style: italic;
+          color: $text-muted;
+          font-weight: 400;
+        }
       }
-      
+
       .grand-total {
         border-top: 1px solid $border-color;
         padding-top: 1.25rem;
         margin-top: 0.75rem;
-        
+
         .label {
           letter-spacing: 0.04em;
           font-weight: 600;
           color: $accent-color;
           font-size: 0.875rem;
         }
-        
+
         .value {
           font-family: $font-serif;
           font-size: 1.75rem;

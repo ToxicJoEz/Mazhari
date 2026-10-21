@@ -14,7 +14,7 @@
   margin-right: auto;
   padding-left: $spacing-md;
   padding-right: $spacing-md;
-  
+
   @media (max-width: 768px) {
     padding-left: $spacing-sm;
     padding-right: $spacing-sm;
@@ -36,7 +36,7 @@
     margin-bottom: 1.25rem;
     color: $accent-color;
   }
-  
+
   .brand-desc {
     color: $text-secondary;
     font-size: 0.9375rem;
@@ -53,24 +53,24 @@
     max-width: 26rem;
     background-color: rgba(255, 255, 255, 0.02);
     transition: $transition-soft;
-    
+
     &:focus-within {
       border-color: $accent-color;
       box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
     }
-    
+
     input {
       background-color: transparent;
       border: none;
       outline: none;
       font-size: 0.875rem;
       color: $text-primary;
-      
+
       &::placeholder {
         color: $text-muted;
       }
     }
-    
+
     button {
       letter-spacing: 0.04em;
       font-size: 0.75rem;
@@ -80,7 +80,7 @@
       background-color: $accent-soft;
       color: $accent-color;
       transition: $transition-soft;
-      
+
       &:hover {
         background-color: $accent-color;
         color: #0b0b0e;
@@ -98,18 +98,18 @@
     margin-bottom: 1.25rem;
     color: $text-primary;
   }
-  
+
   ul {
     font-size: 0.875rem;
     color: $text-secondary;
-    
+
     li {
       margin-bottom: 0.625rem;
     }
-    
+
     a {
       transition: $transition-soft;
-      
+
       &:hover {
         color: $accent-color;
         padding-left: 0.25rem;
@@ -124,15 +124,15 @@
   font-size: 0.8125rem;
   color: $text-muted;
   letter-spacing: 0.02em;
-  
+
   .social-links {
     gap: 1.5rem;
     margin-top: 1rem;
-    
+
     @media (min-width: 768px) {
       margin-top: 0;
     }
-    
+
     a {
       transition: $transition-soft;
       &:hover {

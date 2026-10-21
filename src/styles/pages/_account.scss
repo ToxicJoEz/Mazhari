@@ -1,37 +1,167 @@
+@use '../variables' as *;
 .account-page {
-  padding: 150px 6% 90px;
+  padding: 80px 6% 90px;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
   min-height: 75vh;
-  .account-layout { gap: 72px; align-items: center; }
-  .account-eyebrow { color: $accent-color; font-size: 11px; font-weight: 500; letter-spacing: .18em; }
-  h1 { font-size: clamp(30px, 4vw, 48px); line-height: 1.18; margin: 20px 0; }
-  h2 { font-size: 24px; margin-bottom: 12px; }
-  .account-intro p { color: $text-secondary; max-width: 390px; line-height: 1.8; }
-  .account-shop { color: $accent-color; margin-top: 30px; font-size: 14px; }
-  .account-card { background: $bg-surface; border: 1px solid $border-light; border-radius: $radius-lg; padding: 36px; }
-  .account-description { color: $text-secondary; margin-bottom: 28px; font-size: 14px; }
-  label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: $text-secondary; }
-  input:not([type=checkbox]) { width: 100%; padding: 13px 15px; background: $bg-elevated; border: 1px solid $border-light; border-radius: $radius-sm; color: $text-primary; font: inherit; }
-  input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid $accent-color; outline-offset: 3px; }
-  .account-password-toggle { flex-direction: row; cursor: pointer; }
-  input[type=checkbox] { accent-color: $accent-color; }
-  .account-primary { background: $accent-color; color: $bg-color; padding: 14px 22px; border-radius: $radius-sm; font-size: 14px; font-weight: 500; width: 100%; }
-  .account-primary:hover { background: $accent-hover; }
-  .account-primary:disabled { opacity: .6; cursor: wait; }
-  .account-hint { font-size: 12px; color: $text-secondary; }
-  .account-error { color: #fca5a5; font-size: 14px; padding: 12px; background: rgba(248, 113, 113, .08); border-radius: $radius-sm; margin: 8px 0; }
-  .account-switch { font-size: 13px; color: $text-secondary; margin-top: 24px; }
-  .account-switch a { color: $accent-color; margin-left: 5px; }
-  .account-security { font-size: 12px; color: $text-muted; margin-top: 28px; border-top: 1px solid $border-color; padding-top: 22px; }
-  .account-secondary { border: 1px solid $border-light; border-radius: $radius-sm; padding: 12px 18px; font-size: 14px; margin: 12px 0; }
-  .profile-header { margin-bottom: 40px; }
-  .profile-header p { color: $text-secondary; }
-  .profile-details > div { padding: 17px 0; border-bottom: 1px solid $border-color; }
-  .profile-details dt { font-size: 12px; color: $text-secondary; margin-bottom: 6px; }
-  .profile-details dd { font-size: 16px; overflow-wrap: anywhere; }
-  .profile-addresses { list-style: none; }
-  .profile-addresses li { margin-top: 18px; padding-bottom: 18px; border-bottom: 1px solid $border-color; }
-  @media (max-width: 767px) { padding: 110px 6% 60px; .account-layout { gap: 32px; } .account-card { padding: 24px; } h1 { max-width: 420px; } }
+  .account-layout {
+    gap: 72px;
+    align-items: center;
+  }
+  .account-eyebrow {
+    color: $accent-color;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+  }
+  h1 {
+    font-size: clamp(30px, 4vw, 48px);
+    line-height: 1.18;
+    margin: 20px 0;
+  }
+  h2 {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  .account-intro p {
+    color: $text-secondary;
+    max-width: 390px;
+    line-height: 1.8;
+  }
+  .account-shop {
+    color: $accent-color;
+    margin-top: 30px;
+    font-size: 14px;
+  }
+  .account-card {
+    background: $bg-surface;
+    border: 1px solid $border-light;
+    border-radius: $radius-lg;
+    padding: 36px;
+  }
+  .account-description {
+    color: $text-secondary;
+    margin-bottom: 28px;
+    font-size: 14px;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: $text-secondary;
+  }
+  input:not([type='checkbox']) {
+    width: 100%;
+    padding: 13px 15px;
+    background: $bg-elevated;
+    border: 1px solid $border-light;
+    border-radius: $radius-sm;
+    color: $text-primary;
+    font: inherit;
+  }
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid $accent-color;
+    outline-offset: 3px;
+  }
+  .account-password-toggle {
+    flex-direction: row;
+    cursor: pointer;
+  }
+  input[type='checkbox'] {
+    accent-color: $accent-color;
+  }
+  .account-primary {
+    background: $accent-color;
+    color: $bg-color;
+    padding: 14px 22px;
+    border-radius: $radius-sm;
+    font-size: 14px;
+    font-weight: 500;
+    width: 100%;
+  }
+  .account-primary:hover {
+    background: $accent-hover;
+  }
+  .account-primary:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+  .account-hint {
+    font-size: 12px;
+    color: $text-secondary;
+  }
+  .account-error {
+    color: #fca5a5;
+    font-size: 14px;
+    padding: 12px;
+    background: rgba(248, 113, 113, 0.08);
+    border-radius: $radius-sm;
+    margin: 8px 0;
+  }
+  .account-switch {
+    font-size: 13px;
+    color: $text-secondary;
+    margin-top: 24px;
+  }
+  .account-switch a {
+    color: $accent-color;
+    margin-left: 5px;
+  }
+  .account-security {
+    font-size: 12px;
+    color: $text-muted;
+    margin-top: 28px;
+    border-top: 1px solid $border-color;
+    padding-top: 22px;
+  }
+  .account-secondary {
+    border: 1px solid $border-light;
+    border-radius: $radius-sm;
+    padding: 12px 18px;
+    font-size: 14px;
+    margin: 12px 0;
+  }
+  .profile-header {
+    margin-bottom: 40px;
+  }
+  .profile-header p {
+    color: $text-secondary;
+  }
+  .profile-details > div {
+    padding: 17px 0;
+    border-bottom: 1px solid $border-color;
+  }
+  .profile-details dt {
+    font-size: 12px;
+    color: $text-secondary;
+    margin-bottom: 6px;
+  }
+  .profile-details dd {
+    font-size: 16px;
+    overflow-wrap: anywhere;
+  }
+  .profile-addresses {
+    list-style: none;
+  }
+  .profile-addresses li {
+    margin-top: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid $border-color;
+  }
+  @media (max-width: 767px) {
+    padding: 110px 6% 60px;
+    .account-layout {
+      gap: 32px;
+    }
+    .account-card {
+      padding: 24px;
+    }
+    h1 {
+      max-width: 420px;
+    }
+  }
 }

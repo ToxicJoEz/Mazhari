@@ -1,24 +1,13 @@
-import express from 'express';
-import {
-  createOrder,
-  getMyOrders,
-  getOrderById,
-  cancelOrder,
-} from '../controllers/orderController.js';
-import { verifyToken, optionalAuth } from '../middleware/authMiddleware.js';
-
-const router = express.Router();
-
-// Create COD order (guest or authenticated)
-router.post('/', optionalAuth, createOrder);
-
-// Customer view their own orders
-router.get('/my-orders', verifyToken, getMyOrders);
-
-// View single order (guest with orderNumber, owner, or admin)
-router.get('/:id', optionalAuth, getOrderById);
-
-// Cancel order
-router.post('/:id/cancel', verifyToken, cancelOrder);
-
-export default router;
+import { Router } from 'express';
+import * as c from '../controllers/orderController.js';
+import { optionalAuth, verifyToken } from '../middleware/authMiddleware.js';
+import { rateLimit } from '../middleware/rateLimit.js';
+import { route } from '../utils/validation.js';
+const r = Router();
+r.post('/quote', rateLimit('quotes', 100), route(c.quoteOrder));
+r.post('/', rateLimit('checkout', 30), optionalAuth, route(c.createOrder));
+r.post('/track', rateLimit('tracking', 60), optionalAuth, route(c.getOrderById));
+r.get('/my-orders', verifyToken, route(c.getMyOrders));
+r.get('/:id', optionalAuth, route(c.getOrderById));
+r.post('/:id/cancel', verifyToken, route(c.cancelOrder));
+export default r;

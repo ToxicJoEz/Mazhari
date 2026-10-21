@@ -41,7 +41,7 @@ const PasswordResetRequestSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.models.PasswordResetRequest ||

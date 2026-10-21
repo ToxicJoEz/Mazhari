@@ -9,7 +9,12 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test tests/auth.test.js tests/validation.test.js",
+    "seed:demo": "node scripts/seed-demo.js",
+    "test:integration": "node --test tests/store.integration.test.js",
+    "format": "prettier --write src server shared tests scripts api *.json *.js README.md",
+    "format:check": "prettier --check src server shared tests scripts api *.json *.js README.md",
+    "dev:full": "node scripts/dev.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -27,13 +32,15 @@
     "sass": "^1.105.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "autoprefixer": "^10.6.1",
     "oxlint": "^1.81.0",
     "postcss": "^8.5.28",
-    "tailwindcss": "^3.4.19",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.3",
     "vite": "^8.3.0"
   }
 }
