@@ -1806,3 +1806,64 @@ td strong {
     font-size: 12px;
   }
 }
+.image-library {
+  min-width: 0;
+}
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+  gap: 12px;
+  max-height: 430px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.asset-choice {
+  border: 2px solid #353035;
+  border-radius: 8px;
+  background: #181518;
+  color: #eee;
+  padding: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+.asset-choice.selected {
+  border-color: #f4a1bf;
+  background: #35222b;
+}
+.asset-choice:focus-visible {
+  outline: 3px solid white;
+  outline-offset: 2px;
+}
+.asset-choice:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.asset-choice img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.asset-choice span {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.selected-images {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+.selected-images > div {
+  flex: 0 0 100px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.selected-images img {
+  width: 100px;
+  height: 125px;
+  object-fit: cover;
+  border-radius: 6px;
+}

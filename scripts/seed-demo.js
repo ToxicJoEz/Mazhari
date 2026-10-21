@@ -1,3 +1,4 @@
+import { productGallery } from '../shared/media.js';
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import Product from '../server/models/Product.js';
@@ -18,10 +19,10 @@ try {
         'Sample catalog piece for testing Mazhari. Edit this product in the admin dashboard with your real description, measurements and details.',
       category: ['Fringes', 'Fur', 'Scarf', 'Semi Formal', 'Suede'][i],
       basePrice: [1650, 2200, 1450, 1850, 1750][i],
-      material: 'Sample details — update before selling.',
+      material: 'Sample details â€” update before selling.',
       care: 'Follow the garment care label.',
       featured: i < 2,
-      images: ['/images/product.svg'],
+      images: productGallery(['Fringes', 'Fur', 'Scarf', 'Semi Formal', 'Suede'][i]),
       variants: ['Black', 'Rose'].flatMap((color) =>
         ['S', 'M', 'L'].map((size) => ({ color, size, stock: 5 })),
       ),

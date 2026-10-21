@@ -1,3 +1,4 @@
+import { PRODUCT_IMAGES } from '../../shared/media.js';
 import { useState } from 'react';
 import { Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import {
@@ -41,7 +42,7 @@ function useAction(refresh) {
   }
   return { busy, error, notice, run };
 }
-function SearchBar({ onSearch, placeholder = 'Search…', children }) {
+function SearchBar({ onSearch, placeholder = 'Searchâ€¦', children }) {
   return (
     <form
       className="admin-toolbar"
@@ -232,16 +233,91 @@ function ProductForm({ product, token, onSaved, onClose }) {
             Care instructions
             <textarea name="care" maxLength={500} value={form.care} onChange={field} />
           </label>
-          <label className="span-2">
-            Images <span className="muted">(optional HTTPS URLs, one per line; up to eight)</span>
-            <textarea
-              name="images"
-              rows={2}
-              value={form.images}
-              onChange={field}
-              placeholder="Leave blank to use the default image"
-            />
-          </label>
+          <div className="span-2 image-library">
+            <h3>Product photos</h3>
+            <p className="muted small">
+              Select up to eight photos. The first photo is the cover. Uploads will be available
+              when Cloudinary is connected.
+            </p>
+            <div className="selected-images">
+              {form.images
+                .split('\n')
+                .filter(Boolean)
+                .map((url, index) => (
+                  <div key={url}>
+                    <img src={url} alt={`Selected photo ${index + 1}`} />
+                    <span>{index === 0 ? 'Cover photo' : `Photo ${index + 1}`}</span>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        className="text-link"
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            images: [
+                              url,
+                              ...f.images.split('\n').filter((item) => item && item !== url),
+                            ].join('\n'),
+                          }))
+                        }
+                      >
+                        Make cover
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="text-link"
+                      aria-label={`Remove photo ${index + 1}`}
+                      onClick={() =>
+                        setForm((f) => ({
+                          ...f,
+                          images: f.images
+                            .split('\n')
+                            .filter((item) => item !== url)
+                            .join('\n'),
+                        }))
+                      }
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+            </div>
+            <div className="asset-grid">
+              {PRODUCT_IMAGES.map((image) => {
+                const selected = form.images.split('\n').filter(Boolean);
+                const checked = selected.includes(image.url);
+                return (
+                  <button
+                    type="button"
+                    key={image.url}
+                    className={checked ? 'asset-choice selected' : 'asset-choice'}
+                    aria-pressed={checked}
+                    disabled={!checked && selected.length >= 8}
+                    onClick={() =>
+                      setForm((f) => ({
+                        ...f,
+                        images: (checked
+                          ? selected.filter((url) => url !== image.url)
+                          : [...selected, image.url]
+                        ).join('\n'),
+                      }))
+                    }
+                  >
+                    <img src={image.url} alt={image.label} loading="lazy" />
+                    <span>
+                      {image.label}
+                      {checked ? ' ✓' : ''}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="muted small">
+              {form.images.split('\n').filter(Boolean).length} / 8 selected. Leave empty to use the
+              default image.
+            </p>
+          </div>
         </div>
         <div className="row">
           <label className="check">
@@ -317,7 +393,7 @@ function ProductForm({ product, token, onSaved, onClose }) {
         </button>
         <Notice {...action} />
         <button className="btn" disabled={action.busy}>
-          {action.busy ? 'Saving…' : 'Save product'}
+          {action.busy ? 'Savingâ€¦' : 'Save product'}
         </button>
       </form>
     </Modal>
@@ -387,7 +463,7 @@ function Products({ token }) {
                       <div>
                         <strong>{p.title}</strong>
                         <small>
-                          {p.category} · {p.variants.length} variants
+                          {p.category} Â· {p.variants.length} variants
                         </small>
                       </div>
                     </div>
@@ -712,7 +788,7 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
         <>
           <h3>{r.data.user.name}</h3>
           <p>
-            {r.data.user.email} · {r.data.user.mobile}
+            {r.data.user.email} Â· {r.data.user.mobile}
           </p>
           {r.data.user.role !== 'admin' && (
             <>
@@ -778,7 +854,7 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
                     />
                   </label>
                   <label className="check">
-                    <input type="checkbox" required />I have verified the customer’s identity.
+                    <input type="checkbox" required />I have verified the customerâ€™s identity.
                   </label>
                   <button className="btn secondary" disabled={action.busy}>
                     Set temporary password
@@ -984,7 +1060,7 @@ function ResetDialog({ request, token, onClose, onSaved }) {
           <textarea name="adminNotes" required maxLength={1000} />
         </label>
         <label className="check">
-          <input type="checkbox" required />I have verified this customer’s identity.
+          <input type="checkbox" required />I have verified this customerâ€™s identity.
         </label>
         <Notice {...a} />
         <button className="btn" disabled={a.busy}>
@@ -1237,7 +1313,7 @@ function StoreSettingsForm({ initial, token, shipping }) {
       )}
       <Notice {...a} />
       <button className="btn align-start" disabled={a.busy}>
-        {a.busy ? 'Saving…' : shipping ? 'Save delivery rates' : 'Save store settings'}
+        {a.busy ? 'Savingâ€¦' : shipping ? 'Save delivery rates' : 'Save store settings'}
       </button>
     </form>
   );

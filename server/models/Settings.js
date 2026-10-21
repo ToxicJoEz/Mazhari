@@ -1,3 +1,4 @@
+import { BANNER_IMAGE } from '../../shared/media.js';
 import mongoose from 'mongoose';
 import { GOVERNORATES } from '../../shared/constants.js';
 const schema = new mongoose.Schema(
@@ -9,11 +10,11 @@ const schema = new mongoose.Schema(
       default:
         'Considered silhouettes. Distinctive textures. Discover the Mazhari outerwear collection.',
     },
-    heroImage: { type: String, default: '/images/banner.svg' },
+    heroImage: { type: String, default: BANNER_IMAGE },
     supportEmail: { type: String, default: '' },
     supportPhone: { type: String, default: '' },
     whatsapp: { type: String, default: '' },
-    announcement: { type: String, default: 'Cash on delivery · Across Egypt · Prices in EGP' },
+    announcement: { type: String, default: 'Cash on delivery Â· Across Egypt Â· Prices in EGP' },
     shippingRates: {
       type: [
         {

@@ -14,7 +14,10 @@
     "test:integration": "node --test tests/store.integration.test.js",
     "format": "prettier --write src server shared tests scripts api *.json *.js README.md",
     "format:check": "prettier --check src server shared tests scripts api *.json *.js README.md",
-    "dev:full": "node scripts/dev.js"
+    "dev:full": "node scripts/dev.js",
+    "predev": "node scripts/prepare-media.js",
+    "prebuild": "node scripts/prepare-media.js",
+    "predev:full": "node scripts/prepare-media.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -40,6 +43,7 @@
     "oxlint": "^1.81.0",
     "postcss": "^8.5.28",
     "prettier": "^3.9.10",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.0"
   }
