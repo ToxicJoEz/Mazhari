@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, Menu, X } from 'lucide-react';
+import { useAuth } from '../context/auth';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
   const { totalItems, toggleDrawer } = useCart();
+  const { user, loading, token } = useAuth();
+  const accountLink = user || (loading && token) ? "/profile" : "/login";
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -49,9 +52,7 @@ const Navbar = () => {
 
           {/* Right Action Buttons */}
           <div className="nav-right flex items-center justify-end gap-6">
-            <button className="auth-btn hidden md:block">
-              Login / Register
-            </button>
+            <Link to={accountLink} className="auth-btn hidden md:block">{user ? "My Account" : "Login / Register"}</Link>
             <button 
               className="cart-btn relative flex items-center justify-center" 
               onClick={toggleDrawer}
@@ -98,9 +99,7 @@ const Navbar = () => {
               Collections
             </NavLink>
             <div className="mobile-divider w-full" />
-            <button className="mobile-auth-btn w-full">
-              Login / Register
-            </button>
+            <Link to={accountLink} className="mobile-auth-btn w-full" onClick={() => setIsMobileMenuOpen(false)}>{user ? "My Account" : "Login / Register"}</Link>
           </motion.div>
         )}
       </AnimatePresence>

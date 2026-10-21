@@ -57,14 +57,7 @@ export const verifyToken = async (req, res, next) => {
 
       req.user = user;
     } else {
-      // In scaffold mode (before DB connection string is supplied)
-      req.user = {
-        _id: decoded.id,
-        id: decoded.id,
-        role: decoded.role || 'customer',
-        email: decoded.email,
-        name: decoded.name || 'User',
-      };
+      return res.status(503).json({ success: false, message: 'Account service temporarily unavailable.' });
     }
 
     next();
@@ -109,13 +102,6 @@ export const optionalAuth = async (req, res, next) => {
       if (user && !user.isDeleted && !user.isBanned) {
         req.user = user;
       }
-    } else {
-      req.user = {
-        _id: decoded.id,
-        id: decoded.id,
-        role: decoded.role || 'customer',
-        email: decoded.email,
-      };
     }
   } catch {
     // If invalid token in optional auth, proceed as guest
