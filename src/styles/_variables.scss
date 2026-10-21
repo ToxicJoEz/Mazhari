@@ -1,12 +1,12 @@
-// Typography - Roboto System & Variations
+// Typography - unified Manrope across the storefront and administration
 $font-sans:
-  'Roboto',
+  'Manrope Variable',
   -apple-system,
   BlinkMacSystemFont,
   'Segoe UI',
   sans-serif;
-$font-display: 'Roboto', sans-serif;
-$font-serif: 'Roboto', sans-serif; // Unified clean Roboto across the entire site
+$font-display: $font-sans;
+$font-serif: $font-sans;
 
 // Colors - Soft Dark Mode + Couture Blush Rose Theme
 $bg-color: #0b0b0e; // Velvety obsidian background (soft, warm, not harsh black)
