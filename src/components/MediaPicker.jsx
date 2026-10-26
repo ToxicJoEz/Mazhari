@@ -1,3 +1,4 @@
+import { Modal } from './UI';
 import { useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api';
 import { useResource } from '../lib/store';
@@ -70,6 +71,7 @@ export default function MediaPicker({
   onBusy,
   manager = false,
 }) {
+  const [preview, setPreview] = useState(null);
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
     [archived, setArchived] = useState(false);
@@ -166,6 +168,19 @@ export default function MediaPicker({
   }
   return (
     <div className="media-picker stack">
+      {preview && (
+        <Modal title={preview.name} onClose={() => setPreview(null)}>
+          <ContentImage
+            className="media-preview"
+            src={preview.url}
+            alt={preview.name}
+            width={1800}
+          />
+          <p className="muted small">
+            {preview.width} × {preview.height} · {preview.purpose}
+          </p>
+        </Modal>
+      )}
       {!manager && (
         <>
           <p className="muted small">
@@ -330,7 +345,8 @@ export default function MediaPicker({
                 aria-pressed={manager ? undefined : checked}
                 disabled={busy || (!manager && !checked && selected.length >= max)}
                 onClick={() => {
-                  if (!manager)
+                  if (manager) setPreview(media);
+                  else
                     onChange(
                       checked
                         ? selected.filter((url) => url !== media.url)
