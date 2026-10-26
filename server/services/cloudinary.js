@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import * as v from '../utils/validation.js';
 export const UPLOAD_PRESET = 'mazhari_admin_images_v1';
+export const BANNER_UPLOAD_PRESET = 'mazhari_admin_banners_v1';
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
 export function configured() {
@@ -23,32 +24,35 @@ export function cloud() {
   });
   return cloudinary;
 }
-let presetPromise, presetCloud;
-export async function ensurePreset() {
+const presetPromises = new Map();
+export async function ensurePreset(purpose = 'product') {
+  const preset = purpose === 'banner' ? BANNER_UPLOAD_PRESET : UPLOAD_PRESET;
+  const maxSide = purpose === 'banner' ? 6000 : 3000;
   const sdk = cloud();
-  if (presetCloud !== process.env.CLOUDINARY_CLOUD_NAME) {
-    presetPromise = undefined;
-    presetCloud = process.env.CLOUDINARY_CLOUD_NAME;
-  }
-  if (!presetPromise)
-    presetPromise = (async () => {
-      const options = {
-        unsigned: false,
-        allowed_formats: IMAGE_FORMATS,
-        max_file_size: MAX_IMAGE_BYTES,
-        overwrite: false,
-        transformation: [{ width: 3000, height: 3000, crop: 'limit' }],
-      };
-      try {
-        await sdk.api.upload_preset(UPLOAD_PRESET);
-        await sdk.api.update_upload_preset(UPLOAD_PRESET, options);
-      } catch (error) {
-        if ((error.http_code || error.error?.http_code) !== 404) throw error;
-        await sdk.api.create_upload_preset({ name: UPLOAD_PRESET, ...options });
-      }
-    })().catch(() => {
-      presetPromise = undefined;
-      throw new Error('Cloudinary upload configuration is unavailable.');
-    });
-  await presetPromise;
+  const cacheKey = process.env.CLOUDINARY_CLOUD_NAME + ':' + preset;
+  if (!presetPromises.has(cacheKey))
+    presetPromises.set(
+      cacheKey,
+      (async () => {
+        const options = {
+          unsigned: false,
+          allowed_formats: IMAGE_FORMATS,
+          max_file_size: MAX_IMAGE_BYTES,
+          overwrite: false,
+          transformation: [{ width: maxSide, height: maxSide, crop: 'limit' }],
+        };
+        try {
+          await sdk.api.upload_preset(preset);
+          await sdk.api.update_upload_preset(preset, options);
+        } catch (error) {
+          if ((error.http_code || error.error?.http_code) !== 404) throw error;
+          await sdk.api.create_upload_preset({ name: preset, ...options });
+        }
+      })().catch(() => {
+        presetPromises.delete(cacheKey);
+        throw new Error('Cloudinary upload configuration is unavailable.');
+      }),
+    );
+  await presetPromises.get(cacheKey);
+  return preset;
 }

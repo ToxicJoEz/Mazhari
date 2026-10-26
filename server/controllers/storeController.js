@@ -1,4 +1,4 @@
-import { validateMediaUrls } from './mediaController.js';
+import { withMediaReferences } from './mediaController.js';
 import Settings from '../models/Settings.js';
 import Inquiry from '../models/Inquiry.js';
 import * as v from '../utils/validation.js';
@@ -42,12 +42,12 @@ export const updateSettings = async (req, res) => {
     )
       v.fail(400, 'Each collection can have only one cover.');
   }
-  await validateMediaUrls([
+  const mediaUrls = [
     ...(req.body.heroImage !== undefined ? [settings.heroImage] : []),
     ...(req.body.collectionCovers !== undefined
       ? settings.collectionCovers.map((row) => row.image)
       : []),
-  ]);
+  ];
   if (req.body.shippingRates !== undefined) {
     if (
       !Array.isArray(req.body.shippingRates) ||
@@ -66,7 +66,7 @@ export const updateSettings = async (req, res) => {
       };
     });
   }
-  await settings.save();
+  await withMediaReferences(mediaUrls, (session) => settings.save({ session }));
   res.json({ success: true, settings, message: 'Store settings saved.' });
 };
 export const imageUrl = (value) => {

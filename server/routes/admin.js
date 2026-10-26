@@ -12,6 +12,7 @@ r.get('/media', route(media.listMedia));
 r.post('/media/sign', rateLimit('media-upload', 40), route(media.signUpload));
 r.post('/media/:id/complete', route(media.completeUpload));
 r.patch('/media/:id/archive', route(media.archiveMedia));
+r.delete('/media/:id', route(media.deleteMedia));
 r.get('/metrics', route(c.getOverviewMetrics));
 r.get('/settings', route(s.publicSettings));
 r.put('/settings', route(s.updateSettings));

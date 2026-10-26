@@ -14,7 +14,12 @@ export default function Home() {
         <ContentImage
           src={settings?.heroImage}
           alt={settings?.heroAlt || 'Mazhari collection'}
-          width={2400}
+          width={3840}
+          quality={95}
+          responsive
+          sizes="max(100vw, 144vh)"
+          fetchPriority="high"
+          decoding="async"
           placeholder="Banner image coming soon"
         />
         <div className="hero-copy">

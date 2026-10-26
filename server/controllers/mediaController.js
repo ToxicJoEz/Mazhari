@@ -1,3 +1,6 @@
+import mongoose from 'mongoose';
+import Order from '../models/Order.js';
+import Cart from '../models/Cart.js';
 import { randomUUID } from 'node:crypto';
 import Media from '../models/Media.js';
 import Product from '../models/Product.js';
@@ -6,20 +9,21 @@ import {
   cloud,
   configured,
   ensurePreset,
-  UPLOAD_PRESET,
   MAX_IMAGE_BYTES,
   IMAGE_FORMATS,
 } from '../services/cloudinary.js';
 import * as v from '../utils/validation.js';
-export async function validateMediaUrls(urls) {
-  const unique = [...new Set(urls.filter(Boolean))];
-  if (!unique.length) return;
-  if ((await Media.countDocuments({ url: { $in: unique }, status: 'ready' })) !== unique.length)
-    v.fail(400, 'Choose an available image from the media library, or upload it first.');
-}
 export const listMedia = async (req, res) => {
   const { page, limit } = v.pageParams(req.query);
-  const q = { status: req.query.status === 'archived' ? 'archived' : 'ready' };
+  const q =
+    req.query.status === 'archived'
+      ? {
+          $or: [
+            { status: { $in: ['archived', 'deleting'] } },
+            { status: 'pending', createdAt: { $lt: new Date(Date.now() - 2 * 60 * 60 * 1000) } },
+          ],
+        }
+      : { status: 'ready' };
   if (req.query.purpose && ['product', 'banner', 'collection'].includes(req.query.purpose))
     q.purpose = req.query.purpose;
   if (req.query.search)
@@ -48,13 +52,13 @@ export const signUpload = async (req, res) => {
     v.fail(400, 'The prepared image must be at most 10 MB.');
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(req.body.type))
     v.fail(400, 'Use a JPEG, PNG, WebP, or AVIF image.');
-  await ensurePreset();
+  const uploadPreset = await ensurePreset(purpose);
   const publicId = 'mazhari/' + purpose + '/' + randomUUID();
   const media = await Media.create({ publicId, name, purpose, uploadedBy: req.user._id });
   const params = {
     timestamp: Math.floor(Date.now() / 1000),
     public_id: publicId,
-    upload_preset: UPLOAD_PRESET,
+    upload_preset: uploadPreset,
     overwrite: false,
   };
   const signature = cloud().utils.api_sign_request(
@@ -108,22 +112,82 @@ export const completeUpload = async (req, res) => {
   await media.save();
   res.status(201).json({ success: true, media });
 };
+async function imageInUse(url, session) {
+  if (!url) return false;
+  for (const query of [
+    Product.exists({ images: url }),
+    Settings.exists({ $or: [{ heroImage: url }, { 'collectionCovers.image': url }] }),
+    Order.exists({ 'items.image': url }),
+    Cart.exists({ 'items.image': url }),
+  ])
+    if (await query.session(session)) return true;
+  return false;
+}
+export async function withMediaReferences(urls, work) {
+  const unique = [...new Set(urls.filter(Boolean))];
+  if (!unique.length) return work(undefined);
+  return mongoose.connection.transaction(async (session) => {
+    const locked = await Media.updateMany(
+      { url: { $in: unique }, status: 'ready' },
+      { $inc: { referenceRevision: 1 } },
+      { session },
+    );
+    if (locked.matchedCount !== unique.length)
+      v.fail(400, 'Choose an available image from the media library, or upload it first.');
+    return work(session);
+  });
+}
 export const archiveMedia = async (req, res) => {
-  const media = await Media.findById(v.objectId(req.params.id));
-  if (!media || media.status === 'pending') v.fail(404, 'Image not found.');
-  if (req.body.restore === true) media.status = 'ready';
-  else {
-    const [product, settings] = await Promise.all([
-      Product.exists({ images: media.url }),
-      Settings.exists({ $or: [{ heroImage: media.url }, { 'collectionCovers.image': media.url }] }),
-    ]);
-    if (product || settings)
+  const media = await mongoose.connection.transaction(async (session) => {
+    const image = await Media.findById(v.objectId(req.params.id)).session(session);
+    if (!image || !['ready', 'archived'].includes(image.status))
+      v.fail(409, 'This image is not available for archive or restore.');
+    image.status = req.body.restore === true ? 'ready' : 'archived';
+    await image.save({ session });
+    if (image.status === 'archived' && (await imageInUse(image.url, session)))
       v.fail(
         409,
-        'This image is in use. Remove it from products, banners, and collection covers before archiving.',
+        'This image is in use by a product, banner, collection, cart, or past order. Remove its references before archiving.',
       );
-    media.status = 'archived';
-  }
-  await media.save();
+    return image;
+  });
   res.json({ success: true, media });
+};
+export const deleteMedia = async (req, res) => {
+  const media = await mongoose.connection.transaction(async (session) => {
+    const image = await Media.findById(v.objectId(req.params.id)).session(session);
+    if (!image) v.fail(404, 'Image not found.');
+    const expired =
+      image.status === 'pending' && Date.now() - image.createdAt.getTime() > 2 * 60 * 60 * 1000;
+    if (!['archived', 'deleting'].includes(image.status) && !expired)
+      v.fail(409, 'Archive an unused image before permanently deleting it.');
+    image.status = 'deleting';
+    await image.save({ session });
+    if (await imageInUse(image.url, session))
+      v.fail(
+        409,
+        'This image is still in use by a product, banner, collection, cart, or past order and cannot be deleted.',
+      );
+    return image;
+  });
+  try {
+    const result = await cloud().uploader.destroy(media.publicId, {
+      resource_type: 'image',
+      type: 'upload',
+      invalidate: true,
+    });
+    if (!['ok', 'not found', 'not_found'].includes(result.result))
+      throw new Error('Deletion not confirmed');
+  } catch {
+    return res.status(502).json({
+      success: false,
+      message:
+        'Cloudinary could not confirm deletion. This image remains locked; use Retry deletion to finish safely.',
+    });
+  }
+  await Media.deleteOne({ _id: media._id, status: 'deleting' });
+  res.json({
+    success: true,
+    message: 'Image permanently deleted from Cloudinary and the media library.',
+  });
 };

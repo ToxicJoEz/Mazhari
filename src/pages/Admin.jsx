@@ -1171,8 +1171,9 @@ function MediaLibrary({ token }) {
       <div className="panel stack">
         <MediaPicker token={token} manager />
         <p className="muted small">
-          Archive hides unused images from the picker. You can restore them here. Images remain
-          safely stored in Cloudinary, including photos saved with past orders.
+          Archive hides images and lets you restore them. Under Archived / unfinished uploads,
+          Delete permanently removes unused files from Cloudinary and the database. Images
+          referenced by products, banners, collections, carts, or past orders are protected.
         </p>
       </div>
     </>

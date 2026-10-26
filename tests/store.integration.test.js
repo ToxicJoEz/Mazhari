@@ -1,4 +1,4 @@
-import { cloud, UPLOAD_PRESET } from '../server/services/cloudinary.js';
+import { cloud, BANNER_UPLOAD_PRESET } from '../server/services/cloudinary.js';
 import Media from '../server/models/Media.js';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -384,12 +384,23 @@ test('media uploads require admin access, verify Cloudinary assets, and protect 
     preset: sdk.api.upload_preset,
     update: sdk.api.update_upload_preset,
     resource: sdk.api.resource,
+    destroy: sdk.uploader.destroy,
   };
-  let format = 'jpg';
-  sdk.api.upload_preset = async () => ({ name: UPLOAD_PRESET });
+  let format = 'jpg',
+    destroyCalls = 0,
+    deletionFails = false;
+  sdk.uploader.destroy = async (publicId, options) => {
+    destroyCalls++;
+    assert.match(publicId, /^mazhari\/banner\//);
+    assert.equal(options.invalidate, true);
+    if (deletionFails) throw new Error('Simulated Cloudinary outage');
+    return { result: 'ok' };
+  };
+  sdk.api.upload_preset = async () => ({ name: BANNER_UPLOAD_PRESET });
   sdk.api.update_upload_preset = async (_name, options) => {
     assert.equal(options.unsigned, false);
     assert.equal(options.max_file_size, 10 * 1024 * 1024);
+    assert.equal(options.transformation[0].width, 6000);
   };
   sdk.api.resource = async (publicId) => ({
     public_id: publicId,
@@ -421,7 +432,7 @@ test('media uploads require admin access, verify Cloudinary assets, and protect 
     assert.equal(r.status, 200);
     const signed = r.data;
     assert.equal(signed.params.overwrite, false);
-    assert.equal(signed.params.upload_preset, UPLOAD_PRESET);
+    assert.equal(signed.params.upload_preset, BANNER_UPLOAD_PRESET);
     assert.equal(signed.apiSecret, undefined);
     assert.match(signed.params.public_id, /^mazhari\/banner\//);
     format = 'svg';
@@ -505,6 +516,48 @@ test('media uploads require admin access, verify Cloudinary assets, and protect 
     });
     assert.equal(r.status, 200);
     assert.equal((await Media.findById(media._id)).status, 'ready');
+    r = await api('/admin/media/' + media._id, { token: customerToken, method: 'DELETE' });
+    assert.equal(r.status, 403);
+    r = await api('/admin/media/' + media._id, { token: adminToken, method: 'DELETE' });
+    assert.equal(r.status, 409);
+    await api('/admin/media/' + media._id + '/archive', {
+      token: adminToken,
+      method: 'PATCH',
+      body: {},
+    });
+    const orderCollection = mongoose.connection.db.collection('orders');
+    const orderReference = await orderCollection.insertOne({
+      orderNumber: 'QA-MEDIA-REFERENCE-' + suffix,
+      items: [{ image: media.url }],
+    });
+    r = await api('/admin/media/' + media._id, { token: adminToken, method: 'DELETE' });
+    assert.equal(r.status, 409);
+    assert.equal(destroyCalls, 0);
+    await orderCollection.deleteOne({ _id: orderReference.insertedId });
+    const cartCollection = mongoose.connection.db.collection('carts');
+    const cartReference = await cartCollection.insertOne({
+      user: new mongoose.Types.ObjectId(),
+      items: [{ image: media.url }],
+    });
+    r = await api('/admin/media/' + media._id, { token: adminToken, method: 'DELETE' });
+    assert.equal(r.status, 409);
+    await cartCollection.deleteOne({ _id: cartReference.insertedId });
+    deletionFails = true;
+    r = await api('/admin/media/' + media._id, { token: adminToken, method: 'DELETE' });
+    assert.equal(r.status, 502);
+    assert.equal((await Media.findById(media._id)).status, 'deleting');
+    r = await api('/admin/media/' + media._id + '/archive', {
+      token: adminToken,
+      method: 'PATCH',
+      body: { restore: true },
+    });
+    assert.equal(r.status, 409);
+    deletionFails = false;
+    r = await api('/admin/media/' + media._id, { token: adminToken, method: 'DELETE' });
+    assert.equal(r.status, 200);
+    assert.equal(await Media.findById(media._id), null);
+    assert.equal(destroyCalls, 2);
+
     r = await api('/admin/settings', {
       token: adminToken,
       method: 'PUT',
@@ -515,6 +568,7 @@ test('media uploads require admin access, verify Cloudinary assets, and protect 
     sdk.api.upload_preset = original.preset;
     sdk.api.update_upload_preset = original.update;
     sdk.api.resource = original.resource;
+    sdk.uploader.destroy = original.destroy;
     envKeys.forEach((key, index) => {
       if (previous[index] === undefined) delete process.env[key];
       else process.env[key] = previous[index];

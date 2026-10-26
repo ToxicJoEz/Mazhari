@@ -4,7 +4,9 @@ import { apiRequest } from '../lib/api';
 import { useResource } from '../lib/store';
 import ContentImage from './ContentImage';
 const MAX_BYTES = 20 * 1024 * 1024;
-async function preparePhoto(file) {
+async function preparePhoto(file, purpose) {
+  const isBanner = purpose === 'banner';
+  const maxSide = isBanner ? 6000 : 3000;
   if (
     !['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type) ||
     !file.size ||
@@ -16,13 +18,21 @@ async function preparePhoto(file) {
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
     if (!bitmap.width || !bitmap.height || bitmap.width * bitmap.height > 50_000_000)
       throw new Error('Image dimensions are too large.');
-    const scale = Math.min(1, 3000 / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(
+      1,
+      maxSide / Math.max(bitmap.width, bitmap.height),
+      Math.sqrt(24_000_000 / (bitmap.width * bitmap.height)),
+    );
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const context = canvas.getContext('2d');
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.88));
+    let blob;
+    for (const quality of isBanner ? [0.98, 0.95, 0.92] : [0.88]) {
+      blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', quality));
+      if (blob && blob.size <= 10 * 1024 * 1024) break;
+    }
     if (!blob || blob.size > 10 * 1024 * 1024) throw new Error('The prepared image is too large.');
     return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: blob.type });
   } catch {
@@ -72,6 +82,8 @@ export default function MediaPicker({
   manager = false,
 }) {
   const [preview, setPreview] = useState(null);
+  const [uploadPurpose, setUploadPurpose] = useState(purpose);
+  const effectivePurpose = manager ? uploadPurpose : purpose;
   const [page, setPage] = useState(1),
     [search, setSearch] = useState(''),
     [archived, setArchived] = useState(false);
@@ -117,7 +129,7 @@ export default function MediaPicker({
         )
           throw new Error('Use JPEG, PNG, WebP, or AVIF images up to 20 MB each.');
         setProgress(`Preparing photo ${index + 1} of ${chosen.length}...`);
-        const prepared = await preparePhoto(file);
+        const prepared = await preparePhoto(file, effectivePurpose);
         const signed = await apiRequest('/admin/media/sign', {
           token,
           method: 'POST',
@@ -125,7 +137,7 @@ export default function MediaPicker({
             name: file.name.slice(0, 150),
             size: prepared.size,
             type: prepared.type,
-            purpose,
+            purpose: effectivePurpose,
           }),
         });
         await sendFile(prepared, signed, (percent) =>
@@ -162,6 +174,25 @@ export default function MediaPicker({
       resource.refresh();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function permanentlyDelete(media) {
+    if (
+      !window.confirm(
+        `Permanently delete "${media.name}" from Cloudinary and the media library? This cannot be undone.`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError('');
+    try {
+      await apiRequest(`/admin/media/${media._id}`, { token, method: 'DELETE' });
+      resource.refresh();
+    } catch (err) {
+      setError(err.message);
+      resource.refresh();
     } finally {
       setBusy(false);
     }
@@ -247,9 +278,23 @@ export default function MediaPicker({
           </div>
         </>
       )}
+      {manager && (
+        <label>
+          Upload image for
+          <select
+            value={uploadPurpose}
+            disabled={busy}
+            onChange={(event) => setUploadPurpose(event.target.value)}
+          >
+            <option value="product">Product photos</option>
+            <option value="banner">Banner (high resolution)</option>
+            <option value="collection">Collection cover</option>
+          </select>
+        </label>
+      )}
       <div className="row">
         <label className="btn media-upload">
-          Upload {purpose === 'banner' ? 'banner' : 'photos'}
+          Upload {effectivePurpose === 'banner' ? 'banner' : 'photos'}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif"
@@ -319,7 +364,7 @@ export default function MediaPicker({
                 setPage(1);
               }}
             />
-            Show archived images
+            Archived / unfinished uploads
           </label>
         )}
       </div>
@@ -364,19 +409,52 @@ export default function MediaPicker({
                 </span>
               </button>
               {manager && (
-                <button
-                  className="text-link"
-                  type="button"
-                  disabled={busy}
-                  onClick={() => archive(media)}
-                >
-                  {archived ? 'Restore' : 'Archive'}
-                </button>
+                <div className="stack">
+                  {['ready', 'archived'].includes(media.status) && (
+                    <button
+                      className="text-link"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => archive(media)}
+                    >
+                      {archived ? 'Restore' : 'Archive'}
+                    </button>
+                  )}
+                  {archived && (
+                    <button
+                      className="text-link danger"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => permanentlyDelete(media)}
+                    >
+                      {media.status === 'deleting' ? 'Retry deletion' : 'Delete permanently'}
+                    </button>
+                  )}
+                  {media.status === 'deleting' && (
+                    <span className="muted small">
+                      Deletion pending. Restore is disabled until deletion is confirmed.
+                    </span>
+                  )}
+                  {media.status === 'pending' && (
+                    <span className="muted small">
+                      Unfinished upload. Safe to clean up after two hours.
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           );
         })}
       </div>
+      {purpose === 'banner' &&
+        resource.data?.media.some(
+          (media) => selected.includes(media.url) && media.width < 3200,
+        ) && (
+          <p className="notice warning">
+            This image is small for a full-width banner. Upload a larger original using Upload
+            banner for sharper results on large screens.
+          </p>
+        )}
       {resource.data && !resource.data.media.length && (
         <p className="muted">
           {search

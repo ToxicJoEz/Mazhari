@@ -1,4 +1,4 @@
-import { validateMediaUrls } from './mediaController.js';
+import { withMediaReferences } from './mediaController.js';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
@@ -232,14 +232,17 @@ export const productData = (body) => {
 };
 export const createProduct = async (req, res) => {
   const data = productData(req.body);
-  await validateMediaUrls(data.images);
-  res.status(201).json({ success: true, product: await Product.create(data) });
+  const product = await withMediaReferences(data.images, async (session) => {
+    const created = new Product(data);
+    await created.save({ session });
+    return created;
+  });
+  res.status(201).json({ success: true, product });
 };
 export const updateProduct = async (req, res) => {
   const product = await Product.findById(v.objectId(req.params.id));
   if (!product) v.fail(404, 'Product not found.');
   const data = productData(req.body);
-  await validateMediaUrls(data.images);
   for (const old of product.variants) {
     if (
       !data.variants.some((a) => a.color === old.color && a.size === old.size) &&
@@ -254,7 +257,7 @@ export const updateProduct = async (req, res) => {
       );
   }
   Object.assign(product, data);
-  await product.save();
+  await withMediaReferences(data.images, (session) => product.save({ session }));
   res.json({ success: true, product });
 };
 export const softDeleteProduct = async (req, res) => {
