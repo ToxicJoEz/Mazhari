@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import * as v from '../utils/validation.js';
 export const UPLOAD_PRESET = 'mazhari_admin_images_v1';
-export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
 export function configured() {
   return ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'].every((key) =>

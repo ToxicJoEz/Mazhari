@@ -45,7 +45,7 @@ export const signUpload = async (req, res) => {
   if (!['product', 'banner', 'collection'].includes(purpose)) v.fail(400, 'Invalid image purpose.');
   const name = v.text(req.body.name, 'image name', 150);
   if (!Number.isInteger(req.body.size) || req.body.size <= 0 || req.body.size > MAX_IMAGE_BYTES)
-    v.fail(400, 'Choose an image up to 20 MB.');
+    v.fail(400, 'The prepared image must be at most 10 MB.');
   if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(req.body.type))
     v.fail(400, 'Use a JPEG, PNG, WebP, or AVIF image.');
   await ensurePreset();

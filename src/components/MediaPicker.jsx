@@ -3,6 +3,35 @@ import { apiRequest } from '../lib/api';
 import { useResource } from '../lib/store';
 import ContentImage from './ContentImage';
 const MAX_BYTES = 20 * 1024 * 1024;
+async function preparePhoto(file) {
+  if (
+    !['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type) ||
+    !file.size ||
+    file.size > MAX_BYTES
+  )
+    throw new Error('Choose JPEG, PNG, WebP, or AVIF photos up to 20 MB each.');
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    if (!bitmap.width || !bitmap.height || bitmap.width * bitmap.height > 50_000_000)
+      throw new Error('Image dimensions are too large.');
+    const scale = Math.min(1, 3000 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.88));
+    if (!blob || blob.size > 10 * 1024 * 1024) throw new Error('The prepared image is too large.');
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: blob.type });
+  } catch {
+    throw new Error(
+      'This image could not be prepared. Try another JPEG, PNG, WebP, or AVIF photo up to 20 MB and 50 megapixels.',
+    );
+  } finally {
+    bitmap?.close();
+  }
+}
 function sendFile(file, signed, onProgress) {
   return new Promise((resolve, reject) => {
     const form = new FormData();
@@ -85,17 +114,19 @@ export default function MediaPicker({
           file.size > MAX_BYTES
         )
           throw new Error('Use JPEG, PNG, WebP, or AVIF images up to 20 MB each.');
+        setProgress(`Preparing photo ${index + 1} of ${chosen.length}...`);
+        const prepared = await preparePhoto(file);
         const signed = await apiRequest('/admin/media/sign', {
           token,
           method: 'POST',
           body: JSON.stringify({
             name: file.name.slice(0, 150),
-            size: file.size,
-            type: file.type,
+            size: prepared.size,
+            type: prepared.type,
             purpose,
           }),
         });
-        await sendFile(file, signed, (percent) =>
+        await sendFile(prepared, signed, (percent) =>
           setProgress(`Uploading ${index + 1} of ${chosen.length}: ${percent}%`),
         );
         setPending(signed.mediaId);
@@ -215,7 +246,9 @@ export default function MediaPicker({
             }}
           />
         </label>
-        <span className="muted small">JPEG, PNG, WebP, AVIF · up to 20 MB per image</span>
+        <span className="muted small">
+          JPEG, PNG, WebP, AVIF · source photos up to 20 MB · optimized automatically
+        </span>
       </div>
       {resource.data?.configured === false && (
         <p className="notice warning">
