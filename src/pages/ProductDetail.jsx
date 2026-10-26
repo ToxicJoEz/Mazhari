@@ -1,10 +1,11 @@
+import { resolveColor } from '../lib/colors';
 import ContentImage from '../components/ContentImage';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ShoppingBag, Truck, ArrowLeft } from 'lucide-react';
 import { useResource, money } from '../lib/store';
 import { useCart } from '../context/cart';
-import { Status, Notice } from '../components/UI';
+import { Status, Notice, ProductCard } from '../components/UI';
 import PageTransition from '../components/PageTransition';
 function Product({ product }) {
   const [color, setColor] = useState(product.colors[0]);
@@ -13,6 +14,7 @@ function Product({ product }) {
   );
   const [image, setImage] = useState(0);
   const cart = useCart();
+  const related = useResource('/products/' + product._id + '/related');
   const variant = product.variants.find((v) => v.color === color && v.size === size);
   const selectColor = (value) => {
     setColor(value);
@@ -62,7 +64,19 @@ function Product({ product }) {
             <div className="option-group">
               {product.colors.map((c) => (
                 <button
-                  className={color === c ? 'selected' : ''}
+                  className={
+                    'color-choice ' +
+                    (resolveColor(c) ? 'recognized ' : '') +
+                    (color === c ? 'selected' : '')
+                  }
+                  style={
+                    resolveColor(c)
+                      ? {
+                          '--swatch-color': resolveColor(c).background,
+                          '--swatch-text': resolveColor(c).foreground,
+                        }
+                      : undefined
+                  }
                   aria-pressed={color === c}
                   key={c}
                   onClick={() => selectColor(c)}
@@ -149,6 +163,39 @@ function Product({ product }) {
           </details>
         </section>
       </div>
+      <section className="related-products">
+        {related.loading && <Status loading />}
+        {related.data?.products.length > 0 && (
+          <>
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">KEEP EXPLORING</span>
+                <h2>
+                  {related.data.relatedCount
+                    ? 'Pairs with your point of view.'
+                    : 'Discover more pieces.'}
+                </h2>
+              </div>
+              <Link className="text-link" to="/shop">
+                Shop all
+              </Link>
+            </div>
+            <div className="catalog-grid">
+              {related.data.products.map((item) => (
+                <ProductCard key={item._id} product={item} />
+              ))}
+            </div>
+          </>
+        )}
+        {related.error && (
+          <div className="row">
+            <p className="muted">More pieces are waiting in the collection.</p>
+            <Link className="text-link" to="/shop">
+              Explore the shop
+            </Link>
+          </div>
+        )}
+      </section>
     </>
   );
 }

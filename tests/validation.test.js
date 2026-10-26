@@ -1,3 +1,5 @@
+import { resolveColor } from '../src/lib/colors.js';
+import { ORDER_STATUSES } from '../shared/constants.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as v from '../server/utils/validation.js';
@@ -27,4 +29,24 @@ test('product variants must be unique and stock must be a nonnegative integer', 
     productData({ ...data, variants: [{ color: 'Black', size: 'M', stock: -1 }] }),
   );
   assert.throws(() => productData({ ...data, images: ['javascript:alert(1)'] }));
+});
+
+test('color names and hex values resolve without guessing misspellings or arbitrary input', () => {
+  assert.equal(resolveColor('green').background, 'rgb(0, 128, 0)');
+  assert.equal(resolveColor(' BLUE ').background, 'rgb(0, 0, 255)');
+  assert.equal(resolveColor('Light Blue').background, 'rgb(173, 216, 230)');
+  assert.equal(resolveColor('yellow').foreground, '#111111');
+  assert.equal(resolveColor('navy').foreground, '#ffffff');
+  assert.equal(resolveColor('#0f0').background, 'rgb(0, 255, 0)');
+  for (const input of ['yello', 'constructor', 'var(--x)', 'url(https://example.com)', '', null])
+    assert.equal(resolveColor(input), null);
+});
+test('only the five simplified fulfilment states are selectable', () => {
+  assert.deepEqual(ORDER_STATUSES, [
+    'pending',
+    'processing',
+    'out_for_delivery',
+    'delivered',
+    'cancelled',
+  ]);
 });

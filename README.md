@@ -38,7 +38,7 @@ Guest bags persist in localStorage. Signed-in bags persist in MongoDB. Signing i
 
 Checkout supports guests and accounts. A server quote calculates current prices and governorate shipping. Order creation checks the displayed total, records policy acceptance, and transactionally reserves inventory, creates the order and clears the account bag. Idempotency keys prevent duplicate orders after request retries. No online payment gateway is used.
 
-Account orders appear in My orders. Customers may cancel their own pending/confirmed orders. Guest confirmations include a private tracking key, which is required along with the order number. The key is also saved in that browser; possession grants access to the order. Guessing an order number or matching an email/phone is insufficient.
+Account orders appear in My orders. Customers may cancel their own pending orders. Guest confirmations include a private tracking key, which is required along with the order number. The key is also saved in that browser; possession grants access to the order. Guessing an order number or matching an email/phone is insufficient.
 
 Profiles support details, saved addresses, password changes and account deactivation/restoration. Passwords use bcrypt; login tokens live in per-tab sessionStorage and survive reloads. Role/status checks come from the database on every authenticated request. Password changes/resets and account restrictions invalidate previous sessions.
 
@@ -66,3 +66,13 @@ Original source photos remain in src/assets for manual upload. They are not copi
 ### Permanent image deletion
 
 Archive is recoverable and retains the file in Cloudinary. In Media library, enable Archived / unfinished uploads and use Delete permanently to remove an unused asset from Cloudinary (including CDN invalidation) and its MongoDB media record. Product, banner, collection, saved-cart and historical-order references block deletion. Reference assignment and archive/deletion use transactional media locks to prevent assigning an image while it is being removed. If Cloudinary cannot confirm deletion, the record remains locked in deletion-pending state; Retry deletion completes cleanup safely. Expired unfinished upload records become available for cleanup after two hours, when their upload signatures have expired. Removing a photo from a product alone does not delete a reusable library image.
+
+## Storefront and order UI
+
+Product color names use standard CSS named colors (including spaced names such as Light Blue) or hex codes; unknown names remain plain text buttons. Product details prioritize related items from the same collection and fill remaining recommendation slots with other published products. All content images show an in-frame loading indicator.
+
+All selection menus, confirmations, input prompts and form-validation messages use themed controls. Selectors support keyboard navigation, typeahead and Escape. Stacked dialogs retain focus in the active dialog. The order management dialog uses the available screen width and includes item photographs, quantities and readable status badges.
+
+Fulfilment states are pending, processing, out_for_delivery, delivered and cancelled. Cash status remains separate. Customers can cancel pending orders; admins can reopen cancelled orders subject to stock checks. Existing confirmed states consolidate to processing, and shipped consolidates to out_for_delivery; scripts/simplify-order-statuses.js requires STATUS_BACKUP_PATH if legacy data exists. This does not modify inventory or cash records.
+
+Administrator notification bells in the storefront navbar and dashboard show the actual pending-order count. They refresh every 30 seconds while the page is visible, on focus, and after admin order updates. Notifications open the corresponding order in admin management; counts remain until orders leave pending. Status filter buttons show counts and the order toolbar shows order and unit totals.

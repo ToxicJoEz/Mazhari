@@ -1,19 +1,27 @@
+import ContentImage from '../components/ContentImage';
+import { StatusBadge } from '../components/OrderStatus';
+import { useDialog } from '../context/dialog';
 import { useState, useEffect } from 'react';
 import { Link, Navigate, useParams, useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Copy, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Copy, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/auth';
 import { useResource, money, label, date } from '../lib/store';
 import { apiRequest } from '../lib/api';
 import { Status, Empty, Notice, Pager } from '../components/UI';
 import PageTransition from '../components/PageTransition';
 export function OrderContent({ order, children }) {
+  const quantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
   return (
     <>
       <div className="order-banner row between">
         <div>
           <span className="eyebrow">{order.orderNumber}</span>
-          <h2>{label(order.orderStatus)}</h2>
-          <p>{date(order.createdAt)}</p>
+          <h2>
+            <StatusBadge status={order.orderStatus} />
+          </h2>
+          <p>
+            {date(order.createdAt)} · {quantity} {quantity === 1 ? 'item' : 'items'}
+          </p>
         </div>
         <div>
           <strong>{money(order.total)}</strong>
@@ -40,12 +48,15 @@ export function OrderContent({ order, children }) {
           <h3>Order summary</h3>
           {order.items.map((i, index) => (
             <div className="order-line" key={index}>
-              <span>
-                {i.title}
-                <small>
-                  {i.color} / {i.size} / Qty {i.quantity}
-                </small>
-              </span>
+              <div className="order-item-name">
+                <ContentImage src={i.image} alt={i.title} width={180} />
+                <span>
+                  {i.title}
+                  <small>
+                    {i.color} / {i.size} / Qty {i.quantity}
+                  </small>
+                </span>
+              </div>
               <strong>{money(i.price * i.quantity)}</strong>
             </div>
           ))}
@@ -99,7 +110,7 @@ export function MyOrders() {
               {date(order.createdAt)} · {order.items.length} selections
             </p>
           </div>
-          <span className={'badge ' + order.orderStatus}>{label(order.orderStatus)}</span>
+          <StatusBadge status={order.orderStatus} />
           <strong>{money(order.total)}</strong>
         </Link>
       ))}
@@ -115,6 +126,7 @@ export function MyOrders() {
   );
 }
 export function OrderDetail() {
+  const dialog = useDialog();
   const { id } = useParams();
   const { token, user, loading } = useAuth();
   const location = useLocation();
@@ -149,7 +161,17 @@ export function OrderDetail() {
     return () => controller.abort();
   }, [id, token, trackingToken, loading, revision]);
   const cancel = async () => {
-    if (!window.confirm('Cancel this order? Reserved stock will be released.')) return;
+    if (
+      !(await dialog.confirm({
+        title: 'Cancel this order?',
+        message:
+          'Your reserved items will be released. You can place a new order whenever you’re ready.',
+        confirmLabel: 'Cancel order',
+        cancelLabel: 'Keep order',
+        tone: 'danger',
+      }))
+    )
+      return;
     setBusy(true);
     try {
       await apiRequest('/orders/' + state.order._id + '/cancel', {
@@ -215,17 +237,19 @@ export function OrderDetail() {
               </button>
             </section>
           )}
-          {user &&
-            String(state.order.user) === (user.id || user._id) &&
-            ['pending', 'confirmed'].includes(state.order.orderStatus) && (
-              <button className="btn secondary" disabled={busy} onClick={cancel}>
-                Cancel order
-              </button>
-            )}
           <Notice notice={notice} />
-          <Link className="text-link" to="/shop">
-            Continue exploring
-          </Link>
+          <div className="order-detail-actions">
+            {user &&
+              String(state.order.user) === (user.id || user._id) &&
+              state.order.orderStatus === 'pending' && (
+                <button className="btn secondary order-cancel" disabled={busy} onClick={cancel}>
+                  Cancel order
+                </button>
+              )}
+            <Link className="btn continue-exploring" to="/shop">
+              Continue exploring <ArrowRight size={17} />
+            </Link>
+          </div>
         </>
       )}
     </PageTransition>

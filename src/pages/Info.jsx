@@ -23,7 +23,7 @@ const pages = {
   terms: [
     'Store terms.',
     'A clear understanding, before you order.',
-    'Orders are placed in Egyptian pounds and paid in cash on delivery. Your final price includes the product subtotal and the governorate delivery fee displayed at checkout. Orders are subject to stock availability and confirmation by our team. You can cancel a signed-in order while it is pending or confirmed; guest customers should contact support.',
+    'Orders are placed in Egyptian pounds and paid in cash on delivery. Your final price includes the product subtotal and the governorate delivery fee displayed at checkout. Orders are subject to stock availability and confirmation by our team. You can cancel a signed-in order while it is pending; guest customers should contact support.',
   ],
   privacy: [
     'Your privacy.',

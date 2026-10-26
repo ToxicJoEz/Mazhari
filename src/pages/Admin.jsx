@@ -1,7 +1,12 @@
+import AdminOrderBell from '../components/AdminOrderBell';
+import { useOrderNotifications } from '../context/notifications';
+import { StatusBadge, StatusButtons } from '../components/OrderStatus';
+import { useDialog } from '../context/dialog';
+import Select from '../components/Select';
 import MediaPicker from '../components/MediaPicker';
 import ContentImage from '../components/ContentImage';
 import { useState } from 'react';
-import { Link, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Link, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Package,
@@ -17,7 +22,7 @@ import { useAuth } from '../context/auth';
 import { useStore } from '../context/store';
 import { useResource, money, date, label } from '../lib/store';
 import { apiRequest } from '../lib/api';
-import { ORDER_STATUSES, PAYMENT_STATUSES } from '../../shared/constants';
+import { PAYMENT_STATUSES } from '../../shared/constants';
 import { Status, Empty, Notice, Modal, Pager } from '../components/UI';
 import { OrderContent } from './Orders';
 
@@ -30,9 +35,9 @@ function useAction(refresh) {
     setError('');
     setNotice('');
     try {
-      await work();
+      const result = await work();
       setNotice(message);
-      refresh?.();
+      refresh?.(result);
       return true;
     } catch (err) {
       setError(err.message);
@@ -327,6 +332,7 @@ function ProductForm({ product, token, onSaved, onClose }) {
   );
 }
 function Products({ token }) {
+  const dialog = useDialog();
   const [query, setQuery] = useState(''),
     [page, setPage] = useState(1),
     [status, setStatus] = useState(''),
@@ -362,7 +368,7 @@ function Products({ token }) {
         }}
         placeholder="Search product names"
       >
-        <select
+        <Select
           aria-label="Collection"
           value={category}
           onChange={(e) => {
@@ -376,8 +382,8 @@ function Products({ token }) {
               {name}
             </option>
           ))}
-        </select>
-        <select
+        </Select>
+        <Select
           aria-label="Product status"
           value={status}
           onChange={(e) => {
@@ -388,7 +394,7 @@ function Products({ token }) {
           <option value="">All products</option>
           <option value="active">Not deleted</option>
           <option value="deleted">Deleted</option>
-        </select>
+        </Select>
       </SearchBar>
       <Notice {...action} />
       <Status {...resource} retry={resource.refresh} />
@@ -440,9 +446,9 @@ function Products({ token }) {
                     <button
                       className="text-link danger"
                       disabled={action.busy}
-                      onClick={() => {
+                      onClick={async () => {
                         if (
-                          window.confirm(
+                          await dialog.confirm(
                             'Remove this product from the store? You can restore it later.',
                           )
                         )
@@ -493,83 +499,98 @@ function Products({ token }) {
 }
 
 function OrderEditor({ order, token, onClose, onUpdated }) {
+  const dialog = useDialog();
+  const notifications = useOrderNotifications();
   const [current, setCurrent] = useState(order),
     [status, setStatus] = useState(order.orderStatus),
     [payment, setPayment] = useState(order.paymentStatus),
     [note, setNote] = useState('');
   const action = useAction(onUpdated);
-  const update = async (path, body) => {
+  async function update(path, body) {
     const data = await apiRequest('/admin/orders/' + order._id + path, {
       token,
       method: 'PATCH',
       body: JSON.stringify(body),
     });
     setCurrent(data.order);
-  };
+    notifications.refresh();
+    return data.order;
+  }
   return (
-    <Modal title={order.orderNumber} onClose={onClose}>
+    <Modal title={order.orderNumber} onClose={onClose} className="modal-wide order-editor">
       <OrderContent order={current} />
       <div className="form-grid">
         <form
           className="panel stack"
-          onSubmit={(e) => {
-            e.preventDefault();
+          onSubmit={async (event) => {
+            event.preventDefault();
             if (
               status === 'cancelled' &&
-              !window.confirm('Cancel this order and release its stock?')
+              !(await dialog.confirm({
+                title: 'Cancel this order?',
+                message:
+                  'Reserved stock will be released. The customer will see this status and your note.',
+                confirmLabel: 'Cancel order',
+                cancelLabel: 'Keep order',
+                tone: 'danger',
+              }))
             )
               return;
             action.run(() => update('/status', { status, note }), 'Order status saved.');
           }}
         >
           <h3>Fulfilment status</h3>
-          <select
-            aria-label="Order status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            {ORDER_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {label(s)}
-              </option>
-            ))}
-          </select>
+          <StatusButtons value={status} onChange={setStatus} disabled={action.busy} />
           <label>
             Customer-visible note / reason
-            <textarea value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
+            <textarea
+              value={note}
+              maxLength={1000}
+              onChange={(event) => setNote(event.target.value)}
+            />
           </label>
           <button className="btn" disabled={action.busy || status === current.orderStatus}>
             Save status
           </button>
           <p className="muted small">
             Cancelling releases stock. Reopening reserves it again and requires available stock.
-            Status changes do not mark cash collected.
+            Cash collection is recorded separately.
           </p>
         </form>
         <form
           className="panel stack"
-          onSubmit={(e) => {
-            e.preventDefault();
+          onSubmit={async (event) => {
+            event.preventDefault();
             if (
-              payment === 'cash_collected' &&
-              !window.confirm('Confirm cash was collected for this order?')
+              !(await dialog.confirm({
+                title:
+                  payment === 'cash_collected' ? 'Confirm cash collection' : 'Update cash record?',
+                message:
+                  payment === 'cash_collected'
+                    ? `Confirm that ${money(current.total)} was collected for ${current.orderNumber}. This records the actual cash received.`
+                    : `Change the cash record from ${label(current.paymentStatus)} to ${label(payment)} for ${current.orderNumber}?`,
+                confirmLabel:
+                  payment === 'cash_collected' ? 'Confirm cash received' : 'Update cash record',
+                cancelLabel: 'Keep unchanged',
+              }))
             )
               return;
             action.run(() => update('/payment', { paymentStatus: payment }), 'Cash status saved.');
           }}
         >
           <h3>Cash collection</h3>
-          <select
+          <StatusBadge status={current.paymentStatus} />
+          <Select
             aria-label="Payment status"
             value={payment}
-            onChange={(e) => setPayment(e.target.value)}
+            onChange={(event) => setPayment(event.target.value)}
           >
             {PAYMENT_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {label(s)}
               </option>
             ))}
-          </select>
+          </Select>
           <button
             className="btn secondary"
             disabled={action.busy || payment === current.paymentStatus}
@@ -587,11 +608,14 @@ function OrderEditor({ order, token, onClose, onUpdated }) {
   );
 }
 function Orders({ token }) {
+  const navigate = useNavigate(),
+    location = useLocation();
+  const orderId = new URLSearchParams(location.search).get('order');
   const [query, setQuery] = useState(''),
     [page, setPage] = useState(1),
     [status, setStatus] = useState(''),
     [payment, setPayment] = useState(''),
-    [selected, setSelected] = useState(null);
+    [manualOrder, setSelected] = useState(null);
   const resource = useResource(
     '/admin/orders?page=' +
       page +
@@ -603,6 +627,16 @@ function Orders({ token }) {
       payment,
     token,
   );
+  const linked = useResource(
+    '/admin/orders/' + encodeURIComponent(orderId || ''),
+    token,
+    Boolean(orderId),
+  );
+  const selected = manualOrder || (orderId ? linked.data?.order : null);
+  function closeOrder() {
+    setSelected(null);
+    if (orderId) navigate('/admin/orders', { replace: true });
+  }
   return (
     <>
       <div className="admin-title">
@@ -612,33 +646,28 @@ function Orders({ token }) {
           <p>Review every order and keep delivery and cash records accurate.</p>
         </div>
       </div>
+      <StatusButtons
+        all
+        value={status}
+        onChange={(value) => {
+          setStatus(value);
+          setPage(1);
+        }}
+        counts={resource.data?.statusCounts}
+        ariaLabel="Filter orders by status"
+      />
       <SearchBar
-        onSearch={(q) => {
-          setQuery(q);
+        onSearch={(value) => {
+          setQuery(value);
           setPage(1);
         }}
         placeholder="Order, name, email or phone"
       >
-        <select
-          aria-label="Filter order status"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">All statuses</option>
-          {ORDER_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {label(s)}
-            </option>
-          ))}
-        </select>
-        <select
+        <Select
           aria-label="Filter payment status"
           value={payment}
-          onChange={(e) => {
-            setPayment(e.target.value);
+          onChange={(event) => {
+            setPayment(event.target.value);
             setPage(1);
           }}
         >
@@ -648,21 +677,28 @@ function Orders({ token }) {
               {label(s)}
             </option>
           ))}
-        </select>
+        </Select>
       </SearchBar>
+      <div className="order-results" role="status">
+        {resource.data
+          ? `${resource.data.total} orders · ${resource.data.totalItems} items`
+          : 'Loading orders...'}
+      </div>
       <Status {...resource} retry={resource.refresh} />
+      {orderId && <Status {...linked} retry={linked.refresh} />}
       {resource.data?.orders.length > 0 ? (
         <div className="table-wrap">
-          <table>
+          <table className="orders-table">
             <thead>
               <tr>
                 <th>Order</th>
                 <th>Customer</th>
                 <th>Delivery</th>
+                <th>Items</th>
                 <th>Total</th>
                 <th>Status</th>
                 <th>Cash</th>
-                <th />
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -680,13 +716,21 @@ function Orders({ token }) {
                     {o.shippingAddress.governorate}
                     <small>{o.user ? 'Account' : 'Guest'}</small>
                   </td>
+                  <td>
+                    <strong>{o.items.reduce((sum, item) => sum + item.quantity, 0)}</strong>
+                    <small>
+                      {o.items.length} {o.items.length === 1 ? 'selection' : 'selections'}
+                    </small>
+                  </td>
                   <td>{money(o.total)}</td>
                   <td>
-                    <span className={'badge ' + o.orderStatus}>{label(o.orderStatus)}</span>
+                    <StatusBadge status={o.orderStatus} />
                   </td>
-                  <td>{label(o.paymentStatus)}</td>
                   <td>
-                    <button className="text-link" onClick={() => setSelected(o)}>
+                    <StatusBadge status={o.paymentStatus} />
+                  </td>
+                  <td>
+                    <button className="btn secondary compact-btn" onClick={() => setSelected(o)}>
                       Manage
                     </button>
                   </td>
@@ -701,10 +745,15 @@ function Orders({ token }) {
       <Pager page={page} pages={resource.data?.pages} onChange={setPage} />
       {selected && (
         <OrderEditor
+          key={selected._id}
           order={selected}
           token={token}
-          onClose={() => setSelected(null)}
-          onUpdated={resource.refresh}
+          onClose={closeOrder}
+          onUpdated={(updated) => {
+            setSelected(updated);
+            resource.refresh();
+            if (orderId) linked.refresh();
+          }}
         />
       )}
     </>
@@ -820,6 +869,7 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
   );
 }
 function UsersPanel({ token }) {
+  const dialog = useDialog();
   const [query, setQuery] = useState(''),
     [page, setPage] = useState(1),
     [selected, setSelected] = useState(null);
@@ -893,8 +943,10 @@ function UsersPanel({ token }) {
                             <button
                               className="text-link"
                               disabled={a.busy}
-                              onClick={() => {
-                                const reason = window.prompt('Reason for suspending this account:');
+                              onClick={async () => {
+                                const reason = await dialog.prompt(
+                                  'Reason for suspending this account:',
+                                );
                                 if (reason) command(u, '/ban', 'PATCH', { reason });
                               }}
                             >
@@ -913,9 +965,9 @@ function UsersPanel({ token }) {
                             <button
                               className="text-link danger"
                               disabled={a.busy}
-                              onClick={() => {
+                              onClick={async () => {
                                 if (
-                                  window.confirm(
+                                  await dialog.confirm(
                                     'Deactivate this customer account? It can be restored.',
                                   )
                                 )
@@ -1043,7 +1095,7 @@ function Support({ token }) {
       <section className="panel space-top">
         <div className="row between">
           <h2>Customer messages</h2>
-          <select
+          <Select
             aria-label="Message status"
             value={inboxStatus}
             onChange={(event) => {
@@ -1053,7 +1105,7 @@ function Support({ token }) {
           >
             <option value="new">New messages</option>
             <option value="resolved">Resolved messages</option>
-          </select>
+          </Select>
         </div>
         <Notice {...a} />
         <Status {...messages} retry={messages.refresh} />
@@ -1125,14 +1177,14 @@ function CollectionCoverControls({ token, value = [], onChange, onBusy }) {
       </p>
       <label>
         Collection cover
-        <select value={category} onChange={(event) => setCategory(event.target.value)}>
+        <Select value={category} onChange={(event) => setCategory(event.target.value)}>
           <option value="">Choose a collection</option>
           {names.map((name) => (
             <option key={name} value={name}>
               {name}
             </option>
           ))}
-        </select>
+        </Select>
       </label>
       {categories.error && (
         <p role="alert" className="error">
@@ -1418,6 +1470,7 @@ export default function Admin() {
             </NavLink>
           ))}
         </nav>
+        <AdminOrderBell sidebar />
         <div className="admin-identity">
           <strong>{user.name}</strong>
           <span>Administrator</span>
@@ -1430,6 +1483,12 @@ export default function Admin() {
         </div>
       </aside>
       <section id="admin-content" className="admin-content">
+        <div className="admin-topbar">
+          <Link to="/" className="text-link">
+            View storefront <ArrowUpRight size={15} />
+          </Link>
+          <AdminOrderBell />
+        </div>
         {section === 'overview' ? (
           <Overview token={token} />
         ) : section === 'products' ? (

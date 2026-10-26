@@ -51,13 +51,17 @@ export function Notice({ error, notice }) {
     </>
   );
 }
-export function Modal({ title, onClose, children, drawer = false }) {
+const modalStack = [];
+export function Modal({ title, onClose, children, drawer = false, className = '' }) {
   const ref = useRef();
   const closeRef = useRef(onClose);
+  const modalId = useRef(Symbol());
   useEffect(() => {
     closeRef.current = onClose;
   }, [onClose]);
   useEffect(() => {
+    const id = modalId.current;
+    modalStack.push(id);
     const previous = document.activeElement;
     const old = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -67,6 +71,7 @@ export function Modal({ title, onClose, children, drawer = false }) {
       ].filter((el) => !el.disabled && el.offsetParent !== null);
     focusable()[0]?.focus();
     const key = (event) => {
+      if (modalStack.at(-1) !== id) return;
       if (event.key === 'Escape') closeRef.current();
       if (event.key === 'Tab') {
         const list = focusable(),
@@ -83,6 +88,7 @@ export function Modal({ title, onClose, children, drawer = false }) {
     };
     document.addEventListener('keydown', key);
     return () => {
+      modalStack.splice(modalStack.indexOf(id), 1);
       document.body.style.overflow = old;
       document.removeEventListener('keydown', key);
       previous?.focus();
@@ -97,7 +103,7 @@ export function Modal({ title, onClose, children, drawer = false }) {
     >
       <section
         ref={ref}
-        className={'modal-panel ' + (drawer ? 'drawer-panel' : '')}
+        className={'modal-panel ' + (drawer ? 'drawer-panel ' : '') + className}
         role="dialog"
         aria-modal="true"
         aria-label={title}

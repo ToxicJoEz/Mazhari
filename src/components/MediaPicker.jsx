@@ -1,3 +1,5 @@
+import { useDialog } from '../context/dialog';
+import Select from './Select';
 import { Modal } from './UI';
 import { useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api';
@@ -81,6 +83,7 @@ export default function MediaPicker({
   onBusy,
   manager = false,
 }) {
+  const dialog = useDialog();
   const [preview, setPreview] = useState(null);
   const [uploadPurpose, setUploadPurpose] = useState(purpose);
   const effectivePurpose = manager ? uploadPurpose : purpose;
@@ -180,9 +183,9 @@ export default function MediaPicker({
   }
   async function permanentlyDelete(media) {
     if (
-      !window.confirm(
+      !(await dialog.confirm(
         `Permanently delete "${media.name}" from Cloudinary and the media library? This cannot be undone.`,
-      )
+      ))
     )
       return;
     setBusy(true);
@@ -281,7 +284,7 @@ export default function MediaPicker({
       {manager && (
         <label>
           Upload image for
-          <select
+          <Select
             value={uploadPurpose}
             disabled={busy}
             onChange={(event) => setUploadPurpose(event.target.value)}
@@ -289,7 +292,7 @@ export default function MediaPicker({
             <option value="product">Product photos</option>
             <option value="banner">Banner (high resolution)</option>
             <option value="collection">Collection cover</option>
-          </select>
+          </Select>
         </label>
       )}
       <div className="row">

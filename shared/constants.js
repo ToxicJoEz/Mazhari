@@ -29,9 +29,7 @@ export const GOVERNORATES = [
 ];
 export const ORDER_STATUSES = [
   'pending',
-  'confirmed',
   'processing',
-  'shipped',
   'out_for_delivery',
   'delivered',
   'cancelled',

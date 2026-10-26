@@ -1,3 +1,5 @@
+import { useDialog } from '../context/dialog';
+import Select from '../components/Select';
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { LogOut, Package, Settings, UserRound } from 'lucide-react';
@@ -7,6 +9,7 @@ import { GOVERNORATES } from '../../shared/constants';
 import { Status, Notice } from '../components/UI';
 import PageTransition from '../components/PageTransition';
 function ProfileForms({ user, token, replaceSession, logout }) {
+  const dialog = useDialog();
   const [form, setForm] = useState({
     name: user.name,
     mobile: user.mobile,
@@ -117,7 +120,7 @@ function ProfileForms({ user, token, replaceSession, logout }) {
               <legend>Address {i + 1}</legend>
               <label>
                 Governorate
-                <select
+                <Select
                   required
                   value={a.governorate || ''}
                   onChange={(e) => address(i, 'governorate', e.target.value)}
@@ -126,7 +129,7 @@ function ProfileForms({ user, token, replaceSession, logout }) {
                   {GOVERNORATES.map((g) => (
                     <option key={g}>{g}</option>
                   ))}
-                </select>
+                </Select>
               </label>
               <label>
                 City / district
@@ -218,11 +221,11 @@ function ProfileForms({ user, token, replaceSession, logout }) {
           {user.role !== 'admin' && (
             <form
               className="panel stack danger-zone"
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 const password = new FormData(e.currentTarget).get('password');
                 if (
-                  window.confirm(
+                  await dialog.confirm(
                     'Deactivate your account? You can restore it using your credentials.',
                   )
                 )

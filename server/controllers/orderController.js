@@ -237,10 +237,10 @@ export const transitionOrder = async (req, id, status, note = '') => {
       if (
         req.user.role !== 'admin' &&
         (String(order.user) !== String(req.user._id) ||
-          !['pending', 'confirmed'].includes(order.orderStatus) ||
+          order.orderStatus !== 'pending' ||
           status !== 'cancelled')
       )
-        v.fail(403, 'Only your pending or confirmed orders can be cancelled.');
+        v.fail(403, 'Only your pending orders can be cancelled.');
       if (order.orderStatus === status) {
         result = order;
         return;

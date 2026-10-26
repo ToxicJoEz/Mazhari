@@ -61,3 +61,32 @@ export const getCollections = async (req, res) => {
     ]),
   });
 };
+
+export const getRelatedProducts = async (req, res) => {
+  const current = await Product.findOne({
+    _id: v.objectId(req.params.id),
+    isActive: true,
+    isDeleted: false,
+  });
+  if (!current) v.fail(404, 'Product not found.');
+  const products = await Product.find({
+    _id: { $ne: current._id },
+    category: current.category,
+    isActive: true,
+    isDeleted: false,
+  })
+    .sort({ featured: -1, createdAt: -1 })
+    .limit(4);
+  const relatedCount = products.length;
+  if (products.length < 4)
+    products.push(
+      ...(await Product.find({
+        _id: { $nin: [current._id, ...products.map((product) => product._id)] },
+        isActive: true,
+        isDeleted: false,
+      })
+        .sort({ featured: -1, createdAt: -1 })
+        .limit(4 - products.length)),
+    );
+  res.json({ success: true, products, relatedCount });
+};

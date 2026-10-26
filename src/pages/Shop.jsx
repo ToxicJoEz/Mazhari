@@ -1,3 +1,4 @@
+import Select from '../components/Select';
 import { useSearchParams } from 'react-router-dom';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useResource } from '../lib/store';
@@ -50,12 +51,12 @@ export default function Shop() {
           ].map(([key, title, source]) => (
             <label key={key}>
               {title}
-              <select value={params.get(key) || ''} onChange={(e) => set(key, e.target.value)}>
+              <Select value={params.get(key) || ''} onChange={(e) => set(key, e.target.value)}>
                 <option value="">All {title.toLowerCase()}s</option>
                 {filters.data?.[source]?.map((value) => (
                   <option key={value}>{value}</option>
                 ))}
-              </select>
+              </Select>
             </label>
           ))}
           <div className="form-grid">
@@ -97,7 +98,7 @@ export default function Shop() {
             <span>{result.data?.total || 0} pieces</span>
             <label className="sort-label">
               Sort
-              <select
+              <Select
                 value={params.get('sort') || ''}
                 onChange={(e) => set('sort', e.target.value)}
               >
@@ -105,7 +106,7 @@ export default function Shop() {
                 <option value="newest">Newest</option>
                 <option value="price_asc">Price: low to high</option>
                 <option value="price_desc">Price: high to low</option>
-              </select>
+              </Select>
             </label>
           </div>
           <Status {...result} retry={result.refresh} />

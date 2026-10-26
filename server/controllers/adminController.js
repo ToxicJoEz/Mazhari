@@ -34,7 +34,7 @@ export const getOverviewMetrics = async (req, res) => {
         { $match: { paymentStatus: 'cash_collected', orderStatus: { $ne: 'cancelled' } } },
         { $group: { _id: null, total: { $sum: '$total' } } },
       ]),
-      Order.countDocuments({ orderStatus: { $in: ['pending', 'confirmed', 'processing'] } }),
+      Order.countDocuments({ orderStatus: { $in: ['pending', 'processing'] } }),
       import('./storeController.js')
         .then((m) => m.getSettings())
         .then((s) => s.shippingRates.filter((r) => r.enabled && r.fee === null).length),
@@ -286,24 +286,53 @@ export const updateProductStock = async (req, res) => {
 };
 export const getAllOrders = async (req, res) => {
   const { page, limit } = v.pageParams(req.query),
-    q = {};
-  if (req.query.status) q.orderStatus = req.query.status;
-  if (req.query.payment) q.paymentStatus = req.query.payment;
+    base = {};
+  if (req.query.payment) base.paymentStatus = String(req.query.payment);
   if (req.query.search) {
     const regex = new RegExp(v.escapeRegex(String(req.query.search).slice(0, 100)), 'i');
-    q.$or = [
+    base.$or = [
       { orderNumber: regex },
       { 'customer.name': regex },
       { 'customer.email': regex },
       { 'customer.mobile': regex },
     ];
   }
-  const [orders, total] = await Promise.all([
+  const q = { ...base, ...(req.query.status ? { orderStatus: String(req.query.status) } : {}) };
+  const [orders, total, counts, totals] = await Promise.all([
     Order.find(q)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit),
     Order.countDocuments(q),
+    Order.aggregate([{ $match: base }, { $group: { _id: '$orderStatus', count: { $sum: 1 } } }]),
+    Order.aggregate([
+      { $match: q },
+      { $unwind: '$items' },
+      { $group: { _id: null, count: { $sum: '$items.quantity' } } },
+    ]),
   ]);
-  res.json({ success: true, orders, total, page, pages: Math.ceil(total / limit) });
+  res.json({
+    success: true,
+    orders,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+    statusCounts: Object.fromEntries(counts.map((row) => [row._id, row.count])),
+    totalItems: totals[0]?.count || 0,
+  });
+};
+export const getOrderNotifications = async (_req, res) => {
+  const [count, orders] = await Promise.all([
+    Order.countDocuments({ orderStatus: 'pending' }),
+    Order.find({ orderStatus: 'pending' })
+      .select('orderNumber customer.name total items.quantity createdAt')
+      .sort({ createdAt: -1 })
+      .limit(20),
+  ]);
+  res.json({ success: true, count, orders });
+};
+export const getAdminOrder = async (req, res) => {
+  const order = await Order.findById(v.objectId(req.params.id));
+  if (!order) v.fail(404, 'Order not found.');
+  res.json({ success: true, order });
 };

@@ -4,5 +4,6 @@ import { route } from '../utils/validation.js';
 const r = Router();
 r.get('/', route(c.getProducts));
 r.get('/collections', route(c.getCollections));
+r.get('/:id/related', route(c.getRelatedProducts));
 r.get('/:id', route(c.getProductById));
 export default r;

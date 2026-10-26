@@ -1,3 +1,4 @@
+import Select from '../components/Select';
 import ContentImage from '../components/ContentImage';
 /* eslint-disable react/set-state-in-effect -- Prefill authenticated details and clear the previous server quote when the delivery selection changes. */
 import { useState, useEffect, useRef } from 'react';
@@ -283,7 +284,7 @@ export default function Checkout() {
           {user?.addresses?.length > 0 && (
             <label>
               Use a saved address
-              <select
+              <Select
                 defaultValue=""
                 onChange={(e) => {
                   if (e.target.value !== '')
@@ -296,18 +297,18 @@ export default function Checkout() {
                     {a.street}, {a.governorate}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
           <div className="form-grid">
             <label>
               Governorate
-              <select name="governorate" required value={form.governorate} onChange={field}>
+              <Select name="governorate" required value={form.governorate} onChange={field}>
                 <option value="">Choose governorate</option>
                 {store.settings?.shippingRates.map((rate) => (
                   <option key={rate.governorate}>{rate.governorate}</option>
                 ))}
-              </select>
+              </Select>
             </label>
             <label>
               City / district

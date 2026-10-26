@@ -1,3 +1,4 @@
+import { orderStatusMigrationPipeline } from '../server/utils/orderStatusMigration.js';
 import { cloud, BANNER_UPLOAD_PRESET } from '../server/services/cloudinary.js';
 import Media from '../server/models/Media.js';
 import test, { before, after } from 'node:test';
@@ -371,6 +372,34 @@ test('admin collection filtering combines search and status and keeps catalog-wi
   assert.equal(r.data.total, 0);
 });
 
+test('related products exclude the current piece, prioritize its collection and fill from other pieces', async () => {
+  const extra = await Product.create({
+    title: 'Related QA ' + suffix,
+    category: 'Other QA',
+    basePrice: 99,
+    isActive: true,
+    variants: [{ color: 'Black', size: 'M', stock: 1 }],
+    colors: ['Black'],
+    sizes: ['M'],
+    images: [],
+  });
+  createdProducts.push(extra._id);
+  let r = await api('/products/' + product._id + '/related');
+  assert.equal(r.status, 200);
+  assert.ok(
+    r.data.products.every(
+      (row) => row._id !== String(product._id) && row.isActive && !row.isDeleted,
+    ),
+  );
+  assert.equal(r.data.products[0].category, product.category);
+  assert.ok(r.data.products.some((row) => row._id === String(extra._id)));
+  r = await api('/products/' + extra._id + '/related');
+  assert.equal(r.status, 200);
+  assert.equal(r.data.relatedCount, 0);
+  assert.ok(r.data.products.length > 0);
+  await Product.deleteOne({ _id: extra._id });
+});
+
 test('media uploads require admin access, verify Cloudinary assets, and protect assigned images', async () => {
   assert.equal((await api('/admin/media')).status, 401);
   assert.equal((await api('/admin/media', { token: customerToken })).status, 403);
@@ -611,6 +640,78 @@ test('tampered totals roll back inventory and a valid COD order is durable and i
   r = await api('/cart', { token: customerToken });
   assert.equal(r.data.cart.items.length, 0);
 });
+test('admin notifications and status counts reflect pending orders and expose protected order deep links', async () => {
+  assert.equal((await api('/admin/order-notifications')).status, 401);
+  assert.equal((await api('/admin/order-notifications', { token: customerToken })).status, 403);
+  let r = await api('/admin/order-notifications', { token: adminToken });
+  const pendingBefore = await Order.countDocuments({ orderStatus: 'pending' });
+  assert.equal(r.data.count, pendingBefore);
+  assert.ok(r.data.orders.some((row) => row._id === String(accountOrder._id)));
+  r = await api('/admin/orders/' + accountOrder._id, { token: adminToken });
+  assert.equal(r.status, 200);
+  assert.equal(r.data.order.orderNumber, accountOrder.orderNumber);
+  r = await api('/admin/orders?status=pending', { token: adminToken });
+  assert.equal(r.data.statusCounts.pending, pendingBefore);
+  assert.ok(r.data.totalItems >= 2);
+  r = await api('/admin/orders/' + accountOrder._id + '/status', {
+    token: adminToken,
+    method: 'PATCH',
+    body: { status: 'confirmed' },
+  });
+  assert.equal(r.status, 400);
+  r = await api('/admin/orders/' + accountOrder._id + '/status', {
+    token: adminToken,
+    method: 'PATCH',
+    body: { status: 'processing' },
+  });
+  assert.equal(r.status, 200);
+  assert.equal(
+    (await api('/admin/order-notifications', { token: adminToken })).data.count,
+    pendingBefore - 1,
+  );
+  r = await api('/orders/' + accountOrder._id + '/cancel', {
+    token: customerToken,
+    method: 'POST',
+    body: { reason: 'QA' },
+  });
+  assert.equal(r.status, 403);
+  await api('/admin/orders/' + accountOrder._id + '/status', {
+    token: adminToken,
+    method: 'PATCH',
+    body: { status: 'pending' },
+  });
+});
+
+test('legacy order states consolidate without changing cash, inventory flags or history notes', async () => {
+  const entry = await Order.collection.insertOne({
+    orderNumber: 'QA-LEGACY-' + suffix,
+    orderStatus: 'confirmed',
+    paymentStatus: 'unpaid',
+    stockReserved: false,
+    total: 123,
+    statusHistory: [
+      { status: 'pending', note: 'original' },
+      { status: 'confirmed', note: 'confirmed note' },
+      { status: 'shipped', note: 'dispatch note' },
+    ],
+  });
+  await Order.updateMany({ _id: entry.insertedId }, orderStatusMigrationPipeline(), {
+    updatePipeline: true,
+    timestamps: false,
+  });
+  const migrated = await Order.collection.findOne({ _id: entry.insertedId });
+  assert.equal(migrated.orderStatus, 'processing');
+  assert.deepEqual(
+    migrated.statusHistory.map((row) => row.status),
+    ['pending', 'processing', 'out_for_delivery'],
+  );
+  assert.equal(migrated.statusHistory[2].note, 'dispatch note');
+  assert.equal(migrated.paymentStatus, 'unpaid');
+  assert.equal(migrated.stockReserved, false);
+  assert.equal(migrated.total, 123);
+  await Order.collection.deleteOne({ _id: entry.insertedId });
+});
+
 test('order access checks ownership and guest tracking cannot expose account orders', async () => {
   let r = await api('/orders/' + accountOrder.orderNumber);
   assert.equal(r.status, 404);

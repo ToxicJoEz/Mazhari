@@ -1,3 +1,5 @@
+import NotificationsProvider from './context/NotificationsProvider';
+import DialogProvider from './context/DialogProvider';
 import '@fontsource-variable/manrope';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
@@ -17,7 +19,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <AuthProvider>
           <CartProvider>
             <MotionConfig reducedMotion="user">
-              <App />
+              <DialogProvider>
+                <NotificationsProvider>
+                  <App />
+                </NotificationsProvider>
+              </DialogProvider>
             </MotionConfig>
           </CartProvider>
         </AuthProvider>

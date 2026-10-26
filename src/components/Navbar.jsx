@@ -1,3 +1,4 @@
+import AdminOrderBell from './AdminOrderBell';
 import { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { ShoppingBag, Menu, X, UserRound } from 'lucide-react';
@@ -38,6 +39,7 @@ export default function Navbar() {
             MAZHARI<span>THE OUTERWEAR EDIT</span>
           </Link>
           <div className="nav-actions">
+            <AdminOrderBell />
             <Link
               to={user ? '/profile' : '/login'}
               className="icon-btn"
