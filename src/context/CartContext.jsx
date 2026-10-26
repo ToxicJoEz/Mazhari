@@ -25,7 +25,7 @@ const shape = (item) => ({
   ...item,
   id: String(item.product?._id || item.product || item.productId || item.id),
   name: item.title || item.name,
-  images: [item.image || item.images?.[0] || '/images/product.svg'],
+  images: [item.image || item.images?.[0] || ''],
 });
 export function CartProvider({ children }) {
   const { user, token, loading: authLoading } = useAuth();

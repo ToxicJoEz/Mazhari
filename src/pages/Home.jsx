@@ -1,4 +1,4 @@
-import { BANNER_IMAGE } from '../../shared/media.js';
+import ContentImage from '../components/ContentImage';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Truck, ShieldCheck, Layers } from 'lucide-react';
 import { useStore } from '../context/store';
@@ -11,13 +11,11 @@ export default function Home() {
   return (
     <PageTransition>
       <section className="store-hero">
-        <img
-          src={settings?.heroImage || BANNER_IMAGE}
-          alt="Mazhari outerwear collection"
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = BANNER_IMAGE;
-          }}
+        <ContentImage
+          src={settings?.heroImage}
+          alt={settings?.heroAlt || 'Mazhari collection'}
+          width={2400}
+          placeholder="Banner image coming soon"
         />
         <div className="hero-copy">
           <span className="eyebrow">MAZHARI / THE OUTERWEAR EDIT</span>

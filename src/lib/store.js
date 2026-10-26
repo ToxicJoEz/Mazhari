@@ -10,7 +10,7 @@ export const label = (value) =>
   (value || '').replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 export const date = (value) =>
   value ? new Date(value).toLocaleString('en-EG', { dateStyle: 'medium', timeStyle: 'short' }) : '';
-export const productImage = (p) => p?.images?.[0] || p?.image || '/images/product.svg';
+export const productImage = (p) => p?.images?.[0] || p?.image || '';
 export const userId = (u) => u?.id || u?._id || '';
 export function useResource(path, token, enabled = true) {
   const [state, setState] = useState({ data: null, error: '', loading: true, key: '' });

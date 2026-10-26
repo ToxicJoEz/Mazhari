@@ -1,3 +1,4 @@
+import ContentImage from '../components/ContentImage';
 /* eslint-disable react/set-state-in-effect -- Prefill authenticated details and clear the previous server quote when the delivery selection changes. */
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -398,7 +399,7 @@ export default function Checkout() {
           <h2>Your selection</h2>
           {(quote?.items || cart.cartItems).map((i) => (
             <div className="summary-item" key={(i.product || i.id) + i.color + i.size}>
-              <img src={i.image || i.images?.[0]} alt={i.title || i.name} />
+              <ContentImage src={i.image || i.images?.[0]} alt={i.title || i.name} width={160} />
               <div>
                 <strong>{i.title || i.name}</strong>
                 <p>

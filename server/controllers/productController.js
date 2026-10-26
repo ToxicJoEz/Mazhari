@@ -1,3 +1,4 @@
+import { getSettings } from './storeController.js';
 import Product from '../models/Product.js';
 import * as v from '../utils/validation.js';
 export const getProducts = async (req, res) => {
@@ -48,13 +49,15 @@ export const getCollections = async (req, res) => {
   const products = await Product.find({ isDeleted: false, isActive: true }).select(
     'category colors sizes images',
   );
+  const settings = await getSettings();
   res.json({
     success: true,
     collections: [...new Set(products.map((p) => p.category))].sort(),
     colors: [...new Set(products.flatMap((p) => p.colors))].sort(),
     sizes: [...new Set(products.flatMap((p) => p.sizes))],
-    covers: Object.fromEntries(
-      products.map((p) => [p.category, p.images[0] || '/images/product.svg']),
-    ),
+    covers: Object.fromEntries([
+      ...products.filter((p) => p.images[0]).map((p) => [p.category, p.images[0]]),
+      ...settings.collectionCovers.map((row) => [row.category, row.image]),
+    ]),
   });
 };

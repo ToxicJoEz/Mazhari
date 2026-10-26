@@ -1,4 +1,5 @@
-import { PRODUCT_IMAGES } from '../../shared/media.js';
+import MediaPicker from '../components/MediaPicker';
+import ContentImage from '../components/ContentImage';
 import { useState } from 'react';
 import { Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import {
@@ -151,6 +152,7 @@ function ProductForm({ product, token, onSaved, onClose }) {
           featured: false,
         },
   );
+  const [uploading, setUploading] = useState(false);
   const action = useAction();
   const field = (e) =>
     setForm((f) => ({
@@ -168,6 +170,7 @@ function ProductForm({ product, token, onSaved, onClose }) {
         className="stack"
         onSubmit={async (e) => {
           e.preventDefault();
+          if (uploading) return;
           const ok = await action.run(() =>
             apiRequest('/admin/products' + (product ? '/' + product._id : ''), {
               token,
@@ -235,88 +238,12 @@ function ProductForm({ product, token, onSaved, onClose }) {
           </label>
           <div className="span-2 image-library">
             <h3>Product photos</h3>
-            <p className="muted small">
-              Select up to eight photos. The first photo is the cover. Uploads will be available
-              when Cloudinary is connected.
-            </p>
-            <div className="selected-images">
-              {form.images
-                .split('\n')
-                .filter(Boolean)
-                .map((url, index) => (
-                  <div key={url}>
-                    <img src={url} alt={`Selected photo ${index + 1}`} />
-                    <span>{index === 0 ? 'Cover photo' : `Photo ${index + 1}`}</span>
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        className="text-link"
-                        onClick={() =>
-                          setForm((f) => ({
-                            ...f,
-                            images: [
-                              url,
-                              ...f.images.split('\n').filter((item) => item && item !== url),
-                            ].join('\n'),
-                          }))
-                        }
-                      >
-                        Make cover
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="text-link"
-                      aria-label={`Remove photo ${index + 1}`}
-                      onClick={() =>
-                        setForm((f) => ({
-                          ...f,
-                          images: f.images
-                            .split('\n')
-                            .filter((item) => item !== url)
-                            .join('\n'),
-                        }))
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-            </div>
-            <div className="asset-grid">
-              {PRODUCT_IMAGES.map((image) => {
-                const selected = form.images.split('\n').filter(Boolean);
-                const checked = selected.includes(image.url);
-                return (
-                  <button
-                    type="button"
-                    key={image.url}
-                    className={checked ? 'asset-choice selected' : 'asset-choice'}
-                    aria-pressed={checked}
-                    disabled={!checked && selected.length >= 8}
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        images: (checked
-                          ? selected.filter((url) => url !== image.url)
-                          : [...selected, image.url]
-                        ).join('\n'),
-                      }))
-                    }
-                  >
-                    <img src={image.url} alt={image.label} loading="lazy" />
-                    <span>
-                      {image.label}
-                      {checked ? ' ✓' : ''}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="muted small">
-              {form.images.split('\n').filter(Boolean).length} / 8 selected. Leave empty to use the
-              default image.
-            </p>
+            <MediaPicker
+              token={token}
+              selected={form.images.split('\n').filter(Boolean)}
+              onChange={(images) => setForm((f) => ({ ...f, images: images.join('\n') }))}
+              onBusy={setUploading}
+            />
           </div>
         </div>
         <div className="row">
@@ -392,7 +319,7 @@ function ProductForm({ product, token, onSaved, onClose }) {
           Add variant
         </button>
         <Notice {...action} />
-        <button className="btn" disabled={action.busy}>
+        <button className="btn" disabled={action.busy || uploading}>
           {action.busy ? 'Saving…' : 'Save product'}
         </button>
       </form>
@@ -470,7 +397,7 @@ function Products({ token }) {
           {resource.data.products.map((p) => (
             <article className="admin-product-card" key={p._id}>
               <div className="admin-product-photo">
-                <img src={p.images[0] || '/images/product.svg'} alt={p.title} loading="lazy" />
+                <ContentImage src={p.images[0]} alt={p.title} loading="lazy" />
                 <span className="badge">
                   {p.isDeleted ? 'Deleted' : p.isActive ? 'Published' : 'Draft'}
                 </span>
@@ -1182,8 +1109,80 @@ function Support({ token }) {
   );
 }
 
+function CollectionCoverControls({ token, value = [], onChange, onBusy }) {
+  const categories = useResource('/admin/products?limit=1', token);
+  const [category, setCategory] = useState('');
+  const names = [
+    ...new Set([...(categories.data?.collections || []), ...value.map((row) => row.category)]),
+  ].sort();
+  const current = value.find((row) => row.category === category)?.image;
+  return (
+    <div className="stack">
+      <h2>Collection covers</h2>
+      <p className="muted small">
+        Choose a cover for each collection. Until you choose one, its first available product photo
+        is used.
+      </p>
+      <label>
+        Collection cover
+        <select value={category} onChange={(event) => setCategory(event.target.value)}>
+          <option value="">Choose a collection</option>
+          {names.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {categories.error && (
+        <p role="alert" className="error">
+          {categories.error}
+        </p>
+      )}
+      {category && (
+        <MediaPicker
+          key={category}
+          token={token}
+          purpose="collection"
+          max={1}
+          selected={current ? [current] : []}
+          onBusy={onBusy}
+          onChange={(images) =>
+            onChange([
+              ...value.filter((row) => row.category !== category),
+              { category, image: images[0] || '' },
+            ])
+          }
+        />
+      )}
+    </div>
+  );
+}
+function MediaLibrary({ token }) {
+  return (
+    <>
+      <div className="admin-title">
+        <div>
+          <span className="eyebrow">YOUR BRAND IMAGERY</span>
+          <h1>Media library.</h1>
+          <p>Upload once and reuse images across your store.</p>
+        </div>
+      </div>
+      <div className="panel stack">
+        <MediaPicker token={token} manager />
+        <p className="muted small">
+          Archive hides unused images from the picker. You can restore them here. Images remain
+          safely stored in Cloudinary, including photos saved with past orders.
+        </p>
+      </div>
+    </>
+  );
+}
+
 function StoreSettingsForm({ initial, token, shipping }) {
   const [form, setForm] = useState(initial);
+  const [bannerBusy, setBannerBusy] = useState(false),
+    [coverBusy, setCoverBusy] = useState(false);
   const store = useStore();
   const a = useAction(store.refresh);
   const field = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -1192,12 +1191,15 @@ function StoreSettingsForm({ initial, token, shipping }) {
       className="stack"
       onSubmit={(e) => {
         e.preventDefault();
+        if (bannerBusy || coverBusy) return;
         const body = shipping
           ? { shippingRates: form.shippingRates }
           : {
               heroTitle: form.heroTitle,
               heroSubtitle: form.heroSubtitle,
               heroImage: form.heroImage,
+              heroAlt: form.heroAlt,
+              collectionCovers: form.collectionCovers || [],
               announcement: form.announcement,
               supportEmail: form.supportEmail,
               supportPhone: form.supportPhone,
@@ -1285,15 +1287,25 @@ function StoreSettingsForm({ initial, token, shipping }) {
               onChange={field}
             />
           </label>
+          <h3>Homepage banner</h3>
+          <MediaPicker
+            token={token}
+            purpose="banner"
+            max={1}
+            selected={form.heroImage ? [form.heroImage] : []}
+            onChange={(images) => setForm((f) => ({ ...f, heroImage: images[0] || '' }))}
+            onBusy={setBannerBusy}
+          />
           <label>
-            Banner image URL
-            <input
-              name="heroImage"
-              value={form.heroImage}
-              onChange={field}
-              placeholder="/images/banner.svg"
-            />
+            Banner image description
+            <input name="heroAlt" maxLength={200} value={form.heroAlt || ''} onChange={field} />
           </label>
+          <CollectionCoverControls
+            token={token}
+            value={form.collectionCovers || []}
+            onChange={(collectionCovers) => setForm((f) => ({ ...f, collectionCovers }))}
+            onBusy={setCoverBusy}
+          />
           <label>
             Announcement bar
             <input name="announcement" maxLength={180} value={form.announcement} onChange={field} />
@@ -1321,7 +1333,7 @@ function StoreSettingsForm({ initial, token, shipping }) {
         </div>
       )}
       <Notice {...a} />
-      <button className="btn align-start" disabled={a.busy}>
+      <button className="btn align-start" disabled={a.busy || bannerBusy || coverBusy}>
         {a.busy ? 'Saving…' : shipping ? 'Save delivery rates' : 'Save store settings'}
       </button>
     </form>
@@ -1380,6 +1392,7 @@ export default function Admin() {
   const nav = [
     ['overview', 'Overview', LayoutDashboard],
     ['products', 'Products', Package],
+    ['media', 'Media library', Package],
     ['orders', 'Orders', Package],
     ['users', 'Customers', Users],
     ['shipping', 'Delivery', Truck],
@@ -1420,6 +1433,8 @@ export default function Admin() {
           <Overview token={token} />
         ) : section === 'products' ? (
           <Products token={token} />
+        ) : section === 'media' ? (
+          <MediaLibrary token={token} />
         ) : section === 'orders' ? (
           <Orders token={token} />
         ) : section === 'users' ? (

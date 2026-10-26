@@ -1,3 +1,4 @@
+import ContentImage from './ContentImage';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { X, ArrowUpRight } from 'lucide-react';
@@ -117,15 +118,7 @@ export function ProductCard({ product }) {
   return (
     <Link className="catalog-card" to={'/product/' + product._id}>
       <div className="catalog-image">
-        <img
-          src={productImage(product)}
-          alt={product.title}
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = '/images/product.svg';
-          }}
-        />
+        <ContentImage src={productImage(product)} alt={product.title} loading="lazy" />
         <span className="image-tag">
           {!stock ? 'Sold out' : product.featured ? 'Selected by Mazhari' : product.category}
         </span>

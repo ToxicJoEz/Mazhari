@@ -1,4 +1,3 @@
-import { BANNER_IMAGE } from '../../shared/media.js';
 import mongoose from 'mongoose';
 import { GOVERNORATES } from '../../shared/constants.js';
 const schema = new mongoose.Schema(
@@ -10,7 +9,9 @@ const schema = new mongoose.Schema(
       default:
         'Considered silhouettes. Distinctive textures. Discover the Mazhari outerwear collection.',
     },
-    heroImage: { type: String, default: BANNER_IMAGE },
+    heroImage: { type: String, default: '' },
+    heroAlt: { type: String, default: 'Mazhari collection' },
+    collectionCovers: { type: [{ category: String, image: String, _id: false }], default: [] },
     supportEmail: { type: String, default: '' },
     supportPhone: { type: String, default: '' },
     whatsapp: { type: String, default: '' },

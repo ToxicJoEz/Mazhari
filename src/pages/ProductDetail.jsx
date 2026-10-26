@@ -1,3 +1,4 @@
+import ContentImage from '../components/ContentImage';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ShoppingBag, Truck, ArrowLeft } from 'lucide-react';
@@ -29,13 +30,9 @@ function Product({ product }) {
       <div className="detail-layout">
         <div>
           <div className="detail-image">
-            <img
-              src={product.images[image] || '/images/product.svg'}
+            <ContentImage
+              src={product.images[image]}
               alt={product.title + ' / image ' + (image + 1)}
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = '/images/product.svg';
-              }}
             />
           </div>
           {product.images.length > 1 && (
@@ -47,7 +44,7 @@ function Product({ product }) {
                   aria-pressed={image === i}
                   onClick={() => setImage(i)}
                 >
-                  <img src={src} alt="" />
+                  <ContentImage src={src} alt="" width={160} />
                 </button>
               ))}
             </div>

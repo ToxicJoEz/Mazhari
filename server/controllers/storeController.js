@@ -1,3 +1,4 @@
+import { validateMediaUrls } from './mediaController.js';
 import Settings from '../models/Settings.js';
 import Inquiry from '../models/Inquiry.js';
 import * as v from '../utils/validation.js';
@@ -18,6 +19,7 @@ export const updateSettings = async (req, res) => {
   const settings = await getSettings();
   for (const [key, max] of [
     ['heroTitle', 120],
+    ['heroAlt', 200],
     ['heroSubtitle', 400],
     ['announcement', 180],
     ['supportEmail', 254],
@@ -26,8 +28,26 @@ export const updateSettings = async (req, res) => {
   ])
     if (req.body[key] !== undefined) settings[key] = v.text(req.body[key], key, max, false);
   if (settings.supportEmail) v.email(settings.supportEmail);
-  if (req.body.heroImage !== undefined)
-    settings.heroImage = imageUrl(req.body.heroImage) || '/images/banner.svg';
+  if (req.body.heroImage !== undefined) settings.heroImage = imageUrl(req.body.heroImage);
+  if (req.body.collectionCovers !== undefined) {
+    if (!Array.isArray(req.body.collectionCovers) || req.body.collectionCovers.length > 100)
+      v.fail(400, 'Use up to 100 collection covers.');
+    settings.collectionCovers = req.body.collectionCovers.map((row) => ({
+      category: v.text(row.category, 'collection', 80),
+      image: imageUrl(row.image),
+    }));
+    if (
+      new Set(settings.collectionCovers.map((row) => row.category)).size !==
+      settings.collectionCovers.length
+    )
+      v.fail(400, 'Each collection can have only one cover.');
+  }
+  await validateMediaUrls([
+    ...(req.body.heroImage !== undefined ? [settings.heroImage] : []),
+    ...(req.body.collectionCovers !== undefined
+      ? settings.collectionCovers.map((row) => row.image)
+      : []),
+  ]);
   if (req.body.shippingRates !== undefined) {
     if (
       !Array.isArray(req.body.shippingRates) ||
@@ -52,8 +72,8 @@ export const updateSettings = async (req, res) => {
 export const imageUrl = (value) => {
   if (!value) return '';
   const result = v.text(value, 'image URL', 1000);
-  if (!result.startsWith('/images/') && !/^https:\/\//.test(result))
-    v.fail(400, 'Use an HTTPS image URL or a local placeholder.');
+  if (!/^https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(result))
+    v.fail(400, 'Choose a Cloudinary image from the media library.');
   return result;
 };
 export const contact = async (req, res) => {

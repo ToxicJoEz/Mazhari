@@ -19,7 +19,7 @@ test('product variants must be unique and stock must be a nonnegative integer', 
     basePrice: 100,
     variants: [{ color: 'Black', size: 'M', stock: 2 }],
   };
-  assert.equal(productData(data).images[0], '/images/product.svg');
+  assert.deepEqual(productData(data).images, []);
   assert.throws(() =>
     productData({ ...data, variants: [...data.variants, { color: 'black', size: 'm', stock: 3 }] }),
   );

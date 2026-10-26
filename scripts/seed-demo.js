@@ -1,4 +1,3 @@
-import { productGallery } from '../shared/media.js';
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import Product from '../server/models/Product.js';
@@ -22,7 +21,7 @@ try {
       material: 'Sample details — update before selling.',
       care: 'Follow the garment care label.',
       featured: i < 2,
-      images: productGallery(['Fringes', 'Fur', 'Scarf', 'Semi Formal', 'Suede'][i]),
+      images: [],
       variants: ['Black', 'Rose'].flatMap((color) =>
         ['S', 'M', 'L'].map((size) => ({ color, size, stock: 5 })),
       ),

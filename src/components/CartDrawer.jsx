@@ -1,3 +1,4 @@
+import ContentImage from './ContentImage';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/cart';
@@ -29,7 +30,7 @@ export default function CartDrawer() {
         ) : (
           cart.cartItems.map((i) => (
             <article className="bag-item" key={i.id + i.size + i.color}>
-              <img src={i.images[0]} alt={i.name} />
+              <ContentImage src={i.images[0]} alt={i.name} width={160} />
               <div>
                 <Link to={'/product/' + i.id} onClick={cart.closeDrawer}>
                   {i.name}

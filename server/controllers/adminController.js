@@ -1,3 +1,4 @@
+import { validateMediaUrls } from './mediaController.js';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
@@ -224,17 +225,21 @@ export const productData = (body) => {
     variants,
     colors: [...new Set(variants.map((a) => a.color))],
     sizes: [...new Set(variants.map((a) => a.size))],
-    images: images.length ? images : ['/images/product.svg'],
+    images: [...new Set(images)],
     isActive: body.isActive !== false,
     featured: body.featured === true,
   };
 };
-export const createProduct = async (req, res) =>
-  res.status(201).json({ success: true, product: await Product.create(productData(req.body)) });
+export const createProduct = async (req, res) => {
+  const data = productData(req.body);
+  await validateMediaUrls(data.images);
+  res.status(201).json({ success: true, product: await Product.create(data) });
+};
 export const updateProduct = async (req, res) => {
   const product = await Product.findById(v.objectId(req.params.id));
   if (!product) v.fail(404, 'Product not found.');
   const data = productData(req.body);
+  await validateMediaUrls(data.images);
   for (const old of product.variants) {
     if (
       !data.variants.some((a) => a.color === old.color && a.size === old.size) &&

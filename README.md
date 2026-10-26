@@ -51,4 +51,14 @@ Profiles support details, saved addresses, password changes and account deactiva
 
 ## Scope
 
-Placeholder images are deliberate. Cloudinary uploading is the remaining deferred integration. Contact messages and password requests use the admin inbox; automatic email/SMS services are not part of the configured business flow. Public store policies are available under Delivery, Terms and Privacy.
+Cloudinary powers all content photography. Blank or unavailable photos show text placeholders; no local asset photograph is selected automatically. Contact messages and password requests use the admin inbox; automatic email/SMS services are not part of the configured business flow. Public store policies are available under Delivery, Terms and Privacy.
+
+## Cloudinary media
+
+Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET on the server (local .env and Vercel Production/Preview). Never expose the secret through a VITE_ variable. Restart local servers after changing environment values.
+
+Admin > Media library uploads JPEG, PNG, WebP and AVIF images up to 20 MB directly to Cloudinary. Admin-only signed uploads use the restricted mazhari_admin_images_v1 preset. The backend verifies each asset with Cloudinary before adding it to MongoDB. Unsigned uploads are not enabled. The library supports search, pagination, archive and restore; archiving in-use images is blocked. Archiving preserves the Cloudinary file for historical orders.
+
+Admin > Products controls up to eight photos per product, the cover photo and gallery order. Admin > Store settings controls the homepage banner, image description and collection cover overrides. New collection covers default to an available product image until an override is saved. Removing an override image explicitly shows a placeholder. Save the product or settings form to publish image selections; uploaded files can also be reused later from the library.
+
+Original source photos remain in src/assets for manual upload. They are not copied to the deployed site. The transition script scripts/clear-local-photo-references.js removes only local /images/ references, with an exclusive backup file required through IMAGE_BACKUP_PATH; it does not upload or delete any photo.

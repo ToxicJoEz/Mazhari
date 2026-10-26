@@ -57,7 +57,7 @@ export const normalizeItems = async (items, { session, strict = true } = {}) => 
       size: item.size,
       quantity: qty,
       price: product.basePrice,
-      image: product.images[0] || '/images/product.svg',
+      image: product.images[0] || '',
       availableStock: variant.stock,
     });
   }

@@ -1,3 +1,5 @@
+import { cloud, UPLOAD_PRESET } from '../server/services/cloudinary.js';
+import Media from '../server/models/Media.js';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -367,6 +369,157 @@ test('admin collection filtering combines search and status and keeps catalog-wi
   assert.equal(r.data.products[0].category, 'QA Fixtures');
   r = await api('/admin/products?category=QA.*', { token: adminToken });
   assert.equal(r.data.total, 0);
+});
+
+test('media uploads require admin access, verify Cloudinary assets, and protect assigned images', async () => {
+  assert.equal((await api('/admin/media')).status, 401);
+  assert.equal((await api('/admin/media', { token: customerToken })).status, 403);
+  const envKeys = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+  const previous = envKeys.map((key) => process.env[key]);
+  process.env.CLOUDINARY_CLOUD_NAME = 'mazhari-test-cloud';
+  process.env.CLOUDINARY_API_KEY = 'qa-key';
+  process.env.CLOUDINARY_API_SECRET = 'qa-secret-not-a-real-credential';
+  const sdk = cloud();
+  const original = {
+    preset: sdk.api.upload_preset,
+    update: sdk.api.update_upload_preset,
+    resource: sdk.api.resource,
+  };
+  let format = 'jpg';
+  sdk.api.upload_preset = async () => ({ name: UPLOAD_PRESET });
+  sdk.api.update_upload_preset = async (_name, options) => {
+    assert.equal(options.unsigned, false);
+    assert.equal(options.max_file_size, 20 * 1024 * 1024);
+  };
+  sdk.api.resource = async (publicId) => ({
+    public_id: publicId,
+    resource_type: 'image',
+    format,
+    bytes: 1200,
+    width: 800,
+    height: 600,
+    version: 1234,
+  });
+  try {
+    let r = await api('/admin/media/sign', {
+      token: adminToken,
+      method: 'POST',
+      body: { name: 'bad.svg', size: 100, type: 'image/svg+xml' },
+    });
+    assert.equal(r.status, 400);
+    r = await api('/admin/media/sign', {
+      token: adminToken,
+      method: 'POST',
+      body: { name: 'large.jpg', size: 21 * 1024 * 1024, type: 'image/jpeg' },
+    });
+    assert.equal(r.status, 400);
+    r = await api('/admin/media/sign', {
+      token: adminToken,
+      method: 'POST',
+      body: { name: 'qa.jpg', size: 1200, type: 'image/jpeg', purpose: 'banner', overwrite: true },
+    });
+    assert.equal(r.status, 200);
+    const signed = r.data;
+    assert.equal(signed.params.overwrite, false);
+    assert.equal(signed.params.upload_preset, UPLOAD_PRESET);
+    assert.equal(signed.apiSecret, undefined);
+    assert.match(signed.params.public_id, /^mazhari\/banner\//);
+    format = 'svg';
+    r = await api('/admin/media/' + signed.mediaId + '/complete', {
+      token: adminToken,
+      method: 'POST',
+      body: {},
+    });
+    assert.equal(r.status, 400);
+    format = 'jpg';
+    r = await api('/admin/media/' + signed.mediaId + '/complete', {
+      token: adminToken,
+      method: 'POST',
+      body: { url: 'https://attacker.example/fake.jpg' },
+    });
+    assert.equal(r.status, 201);
+    const media = r.data.media;
+    assert.match(media.url, /^https:\/\/res\.cloudinary\.com\/mazhari-test-cloud\/image\/upload\//);
+    r = await api('/admin/media/' + signed.mediaId + '/complete', {
+      token: adminToken,
+      method: 'POST',
+      body: {},
+    });
+    assert.equal(r.status, 200);
+    const saved = product.toObject();
+    r = await api('/admin/products/' + product._id, {
+      token: adminToken,
+      method: 'PUT',
+      body: { ...saved, images: [media.url] },
+    });
+    assert.equal(r.status, 200);
+    r = await api('/admin/media/' + media._id + '/archive', {
+      token: adminToken,
+      method: 'PATCH',
+      body: {},
+    });
+    assert.equal(r.status, 409);
+    await api('/admin/products/' + product._id, {
+      token: adminToken,
+      method: 'PUT',
+      body: { ...saved, images: [] },
+    });
+    r = await api('/admin/settings', {
+      token: adminToken,
+      method: 'PUT',
+      body: {
+        heroImage: media.url,
+        collectionCovers: [{ category: 'QA Fixtures', image: media.url }],
+      },
+    });
+    assert.equal(r.status, 200);
+    assert.equal((await api('/products/collections')).data.covers['QA Fixtures'], media.url);
+    r = await api('/admin/media/' + media._id + '/archive', {
+      token: adminToken,
+      method: 'PATCH',
+      body: {},
+    });
+    assert.equal(r.status, 409);
+    await api('/admin/settings', {
+      token: adminToken,
+      method: 'PUT',
+      body: { heroImage: '', collectionCovers: [] },
+    });
+    r = await api('/admin/media/' + media._id + '/archive', {
+      token: adminToken,
+      method: 'PATCH',
+      body: {},
+    });
+    assert.equal(r.status, 200);
+    assert.equal((await api('/admin/media', { token: adminToken })).data.total, 0);
+    r = await api('/admin/products/' + product._id, {
+      token: adminToken,
+      method: 'PUT',
+      body: { ...saved, images: [media.url] },
+    });
+    assert.equal(r.status, 400);
+    r = await api('/admin/media/' + media._id + '/archive', {
+      token: adminToken,
+      method: 'PATCH',
+      body: { restore: true },
+    });
+    assert.equal(r.status, 200);
+    assert.equal((await Media.findById(media._id)).status, 'ready');
+    r = await api('/admin/settings', {
+      token: adminToken,
+      method: 'PUT',
+      body: { heroImage: 'https://res.cloudinary.com/other/image/upload/not-registered.jpg' },
+    });
+    assert.equal(r.status, 400);
+  } finally {
+    sdk.api.upload_preset = original.preset;
+    sdk.api.update_upload_preset = original.update;
+    sdk.api.resource = original.resource;
+    envKeys.forEach((key, index) => {
+      if (previous[index] === undefined) delete process.env[key];
+      else process.env[key] = previous[index];
+    });
+  }
 });
 
 test('tampered totals roll back inventory and a valid COD order is durable and idempotent', async () => {

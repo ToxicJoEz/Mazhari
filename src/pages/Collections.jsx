@@ -1,3 +1,4 @@
+import ContentImage from '../components/ContentImage';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { useResource } from '../lib/store';
@@ -20,7 +21,11 @@ export default function Collections() {
             key={category}
             className="collection-tile"
           >
-            <img src={resource.data.covers[category]} alt={category} />
+            <ContentImage
+              src={resource.data.covers[category]}
+              alt={category}
+              placeholder="Collection photo coming soon"
+            />
             <div>
               <span className="eyebrow">EDIT {String(i + 1).padStart(2, '0')}</span>
               <h2>

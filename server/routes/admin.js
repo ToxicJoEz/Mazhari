@@ -1,3 +1,5 @@
+import * as media from '../controllers/mediaController.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { Router } from 'express';
 import * as c from '../controllers/adminController.js';
 import * as s from '../controllers/storeController.js';
@@ -6,6 +8,10 @@ import { verifyToken, isAdmin } from '../middleware/authMiddleware.js';
 import { route } from '../utils/validation.js';
 const r = Router();
 r.use(verifyToken, isAdmin);
+r.get('/media', route(media.listMedia));
+r.post('/media/sign', rateLimit('media-upload', 40), route(media.signUpload));
+r.post('/media/:id/complete', route(media.completeUpload));
+r.patch('/media/:id/archive', route(media.archiveMedia));
 r.get('/metrics', route(c.getOverviewMetrics));
 r.get('/settings', route(s.publicSettings));
 r.put('/settings', route(s.updateSettings));
