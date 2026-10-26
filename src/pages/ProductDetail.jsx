@@ -163,39 +163,41 @@ function Product({ product }) {
           </details>
         </section>
       </div>
-      <section className="related-products">
-        {related.loading && <Status loading />}
-        {related.data?.products.length > 0 && (
-          <>
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">KEEP EXPLORING</span>
-                <h2>
-                  {related.data.relatedCount
-                    ? 'Pairs with your point of view.'
-                    : 'Discover more pieces.'}
-                </h2>
+      {(related.loading || related.error || Boolean(related.data?.products.length)) && (
+        <section className="related-products">
+          {related.loading && <Status loading />}
+          {related.data?.products.length > 0 && (
+            <>
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">KEEP EXPLORING</span>
+                  <h2>
+                    {related.data.relatedCount
+                      ? 'Pairs with your point of view.'
+                      : 'Discover more pieces.'}
+                  </h2>
+                </div>
+                <Link className="text-link" to="/shop">
+                  Shop all
+                </Link>
               </div>
+              <div className="catalog-grid">
+                {related.data.products.map((item) => (
+                  <ProductCard key={item._id} product={item} />
+                ))}
+              </div>
+            </>
+          )}
+          {related.error && (
+            <div className="row">
+              <p className="muted">More pieces are waiting in the collection.</p>
               <Link className="text-link" to="/shop">
-                Shop all
+                Explore the shop
               </Link>
             </div>
-            <div className="catalog-grid">
-              {related.data.products.map((item) => (
-                <ProductCard key={item._id} product={item} />
-              ))}
-            </div>
-          </>
-        )}
-        {related.error && (
-          <div className="row">
-            <p className="muted">More pieces are waiting in the collection.</p>
-            <Link className="text-link" to="/shop">
-              Explore the shop
-            </Link>
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      )}
     </>
   );
 }
