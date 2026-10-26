@@ -92,7 +92,10 @@ export const completeUpload = async (req, res) => {
     !IMAGE_FORMATS.includes(asset.format) ||
     asset.bytes > MAX_IMAGE_BYTES ||
     !asset.width ||
-    !asset.height
+    !asset.height ||
+    asset.width > (media.purpose === 'banner' ? 6000 : 3000) ||
+    asset.height > (media.purpose === 'banner' ? 6000 : 3000) ||
+    asset.width * asset.height > 24_000_000
   )
     v.fail(400, 'Cloudinary did not return a supported image.');
   const url = cloud().url(asset.public_id, {

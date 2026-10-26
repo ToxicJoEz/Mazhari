@@ -400,7 +400,7 @@ test('media uploads require admin access, verify Cloudinary assets, and protect 
   sdk.api.update_upload_preset = async (_name, options) => {
     assert.equal(options.unsigned, false);
     assert.equal(options.max_file_size, 10 * 1024 * 1024);
-    assert.equal(options.transformation[0].width, 6000);
+    assert.equal(options.transformation, undefined);
   };
   sdk.api.resource = async (publicId) => ({
     public_id: publicId,

@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import * as v from '../utils/validation.js';
 export const UPLOAD_PRESET = 'mazhari_admin_images_v1';
-export const BANNER_UPLOAD_PRESET = 'mazhari_admin_banners_v1';
+export const BANNER_UPLOAD_PRESET = 'mazhari_admin_banners_v2';
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
 export function configured() {
@@ -27,7 +27,6 @@ export function cloud() {
 const presetPromises = new Map();
 export async function ensurePreset(purpose = 'product') {
   const preset = purpose === 'banner' ? BANNER_UPLOAD_PRESET : UPLOAD_PRESET;
-  const maxSide = purpose === 'banner' ? 6000 : 3000;
   const sdk = cloud();
   const cacheKey = process.env.CLOUDINARY_CLOUD_NAME + ':' + preset;
   if (!presetPromises.has(cacheKey))
@@ -39,7 +38,9 @@ export async function ensurePreset(purpose = 'product') {
           allowed_formats: IMAGE_FORMATS,
           max_file_size: MAX_IMAGE_BYTES,
           overwrite: false,
-          transformation: [{ width: maxSide, height: maxSide, crop: 'limit' }],
+          ...(purpose === 'banner'
+            ? {}
+            : { transformation: [{ width: 3000, height: 3000, crop: 'limit' }] }),
         };
         try {
           await sdk.api.upload_preset(preset);
