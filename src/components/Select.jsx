@@ -141,6 +141,10 @@ export default function Select({
           onChange={() => {}}
           onInvalid={(event) => {
             event.preventDefault();
+            const first = event.target.form?.querySelector(
+              'input:invalid, textarea:invalid, select:invalid',
+            );
+            if (first && first !== event.target) return;
             setInvalid(true);
             show();
             trigger.current.focus();

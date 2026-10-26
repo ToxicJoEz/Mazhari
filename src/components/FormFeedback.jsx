@@ -1,17 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 export default function FormFeedback() {
   const [message, setMessage] = useState('');
-  const batch = useRef(false);
   useEffect(() => {
     const invalid = (event) => {
       if (event.target.classList.contains('select-validation')) return;
       event.preventDefault();
-      if (batch.current) return;
-      batch.current = true;
-      queueMicrotask(() => {
-        batch.current = false;
-      });
       const field = event.target;
+      const first = field.form?.querySelector('input:invalid, textarea:invalid, select:invalid');
+      if (first && first !== field) return;
       const title =
         field.labels?.[0]?.textContent?.trim() ||
         field.getAttribute('aria-label') ||
