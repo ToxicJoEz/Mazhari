@@ -852,13 +852,27 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
           <h3 className="space-top">Recent orders</h3>
           {r.data.orders.length ? (
             r.data.orders.map((o) => (
-              <div className="order-line" key={o._id}>
-                <span>
-                  {o.orderNumber}
-                  <small>{label(o.orderStatus)}</small>
-                </span>
-                <strong>{money(o.total)}</strong>
-              </div>
+              <article className="customer-order-preview" key={o._id}>
+                <Link className="row between" to={'/admin/orders?order=' + o._id} onClick={onClose}>
+                  <span>
+                    <strong>{o.orderNumber}</strong> <StatusBadge status={o.orderStatus} />
+                  </span>
+                  <strong>
+                    {money(o.total)} <ArrowUpRight size={15} />
+                  </strong>
+                </Link>
+                {o.items.map((item, index) => (
+                  <div className="order-item-name" key={index}>
+                    <ContentImage src={item.image} alt={item.title} width={120} />
+                    <span>
+                      {item.title}
+                      <small>
+                        {item.color} / {item.size} / Qty {item.quantity}
+                      </small>
+                    </span>
+                  </div>
+                ))}
+              </article>
             ))
           ) : (
             <p>No orders yet.</p>

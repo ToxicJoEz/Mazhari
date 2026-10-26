@@ -2539,3 +2539,22 @@ td strong {
   background: #141117;
   box-shadow: -8px 0 12px #0003;
 }
+
+.customer-order-preview {
+  display: grid;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid #ffffff1a;
+}
+.customer-order-preview .order-item-name > .image-frame,
+.customer-order-preview .order-item-name > .image-placeholder {
+  width: 48px;
+  height: 60px;
+  flex-basis: 48px;
+}
+.customer-order-preview small {
+  display: block;
+  margin-top: 5px;
+  color: #b6a8b8;
+  font-size: 11px;
+}

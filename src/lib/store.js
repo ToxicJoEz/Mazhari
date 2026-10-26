@@ -34,8 +34,6 @@ export function useResource(path, token, enabled = true) {
     setState((s) => ({ ...s, loading: true, error: '' }));
     setRevision((n) => n + 1);
   }, []);
-  return {
-    ...(state.key === requestKey ? state : { data: null, error: '', loading: true }),
-    refresh,
-  };
+  const current = state.key === requestKey ? state : { data: null, error: '', loading: true };
+  return { data: current.data, error: current.error, loading: current.loading, refresh };
 }
