@@ -37,6 +37,9 @@ export default function Select({
     const above = below < 180 && rect.top > below;
     setPosition({
       position: 'fixed',
+      zIndex: trigger.current.closest('.modal-backdrop')
+        ? Number(getComputedStyle(trigger.current.closest('.modal-backdrop')).zIndex) + 1
+        : 10000,
       left: Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8)),
       width: rect.width,
       maxHeight: Math.max(100, Math.min(280, above ? rect.top - 16 : below)),

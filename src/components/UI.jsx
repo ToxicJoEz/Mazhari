@@ -1,5 +1,6 @@
 import ContentImage from './ContentImage';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { X, ArrowUpRight } from 'lucide-react';
 import { money, productImage } from '../lib/store';
@@ -52,8 +53,10 @@ export function Notice({ error, notice }) {
   );
 }
 const modalStack = [];
+let nextModalLayer = 20000;
 export function Modal({ title, onClose, children, drawer = false, className = '' }) {
   const ref = useRef();
+  const [layer] = useState(() => (nextModalLayer += 20));
   const closeRef = useRef(onClose);
   const modalId = useRef(Symbol());
   useEffect(() => {
@@ -94,9 +97,10 @@ export function Modal({ title, onClose, children, drawer = false, className = ''
       previous?.focus();
     };
   }, []);
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
+      style={{ zIndex: layer }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -116,7 +120,8 @@ export function Modal({ title, onClose, children, drawer = false, className = ''
         </header>
         {children}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export function ProductCard({ product }) {

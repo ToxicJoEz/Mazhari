@@ -684,7 +684,7 @@ $surface: #131216;
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 120;
+  z-index: 20000;
   background: #000b;
   display: flex;
   align-items: center;
@@ -1400,10 +1400,10 @@ td strong {
 .shipping-grid input {
   font-size: 12px;
 }
-.admin-content .modal-panel .order-banner {
+.modal-panel .order-banner {
   margin-bottom: 20px;
 }
-.admin-content .modal-panel .panel {
+.modal-panel .panel {
   padding: 20px;
 }
 @media (min-width: 1600px) {
@@ -1796,7 +1796,7 @@ td strong {
     align-items: flex-start;
     flex-direction: column;
   }
-  .admin-content .modal-panel .form-grid {
+  .modal-panel .form-grid {
     grid-template-columns: 1fr;
   }
   .profile-columns .panel {
