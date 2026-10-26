@@ -1988,7 +1988,7 @@ td strong {
   cursor: pointer;
   flex-direction: row;
 }
-.media-upload input {
+.media-upload input[type='file'] {
   position: absolute;
   inset: 0;
   opacity: 0;
