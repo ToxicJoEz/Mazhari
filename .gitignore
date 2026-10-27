@@ -33,3 +33,8 @@ dist-ssr
 
 # Generated optimized versions of src/assets
 public/images/library/
+
+# Archives
+*.rar
+*.zip
+*.7z
