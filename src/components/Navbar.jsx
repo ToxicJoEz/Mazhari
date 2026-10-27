@@ -64,7 +64,9 @@ export default function Navbar() {
             <NavLink to="/shop">Shop all</NavLink>
             <NavLink to="/collections">Collections</NavLink>
             <NavLink to="/track">Track an order</NavLink>
-            {user?.role === 'admin' && <NavLink to="/admin">Admin dashboard</NavLink>}
+            {['admin', 'moderator'].includes(user?.role) && (
+              <NavLink to="/admin">Admin dashboard</NavLink>
+            )}
           </nav>
         )}
       </header>

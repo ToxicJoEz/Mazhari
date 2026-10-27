@@ -204,7 +204,8 @@ export const getOrderById = async (req, res) => {
   const order = await Order.findOne(query).select('+guestTokenHash');
   if (!order) v.fail(404, 'Order not found or tracking key is incorrect.');
   const owner =
-    req.user && (req.user.role === 'admin' || String(order.user) === String(req.user._id));
+    req.user &&
+    (['admin', 'moderator'].includes(req.user.role) || String(order.user) === String(req.user._id));
   if (!owner) {
     const provided = req.headers['x-order-token'] || req.body?.trackingToken;
     const digest = typeof provided === 'string' ? hash(provided) : '';
@@ -218,7 +219,7 @@ export const getOrderById = async (req, res) => {
   }
   const clean = order.toObject();
   delete clean.guestTokenHash;
-  if (req.user?.role !== 'admin')
+  if (!['admin', 'moderator'].includes(req.user?.role))
     clean.statusHistory = clean.statusHistory.map(({ status, changedAt, note }) => ({
       status,
       changedAt,
@@ -235,7 +236,7 @@ export const transitionOrder = async (req, id, status, note = '') => {
       const order = await Order.findById(v.objectId(id)).session(session);
       if (!order) v.fail(404, 'Order not found.');
       if (
-        req.user.role !== 'admin' &&
+        !['admin', 'moderator'].includes(req.user.role) &&
         (String(order.user) !== String(req.user._id) ||
           order.orderStatus !== 'pending' ||
           status !== 'cancelled')

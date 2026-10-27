@@ -9,7 +9,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --test tests/auth.test.js tests/validation.test.js",
+    "test": "node --test tests/auth.test.js tests/validation.test.js tests/roles.test.js",
     "seed:demo": "node scripts/seed-demo.js",
     "test:integration": "node --test tests/store.integration.test.js",
     "format": "prettier --write src server shared tests scripts api *.json *.js README.md",

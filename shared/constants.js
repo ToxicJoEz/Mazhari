@@ -35,3 +35,4 @@ export const ORDER_STATUSES = [
   'cancelled',
 ];
 export const PAYMENT_STATUSES = ['unpaid', 'cash_collected', 'delivery_failed'];
+export const ROLES = ['customer', 'moderator', 'admin'];

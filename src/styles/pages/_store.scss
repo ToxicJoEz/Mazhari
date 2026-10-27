@@ -1011,6 +1011,21 @@ $surface: #131216;
   color: #e0cbaa;
   border-color: #e0cbaa40;
 }
+.badge.role-admin {
+  color: #dfba73;
+  border-color: rgba(223, 186, 115, 0.4);
+  background: rgba(223, 186, 115, 0.08);
+}
+.badge.role-moderator {
+  color: #9cb8e8;
+  border-color: rgba(156, 184, 232, 0.4);
+  background: rgba(156, 184, 232, 0.08);
+}
+.badge.role-customer {
+  color: #b8b1bd;
+  border-color: rgba(184, 177, 189, 0.3);
+  background: rgba(184, 177, 189, 0.05);
+}
 .profile-navigation {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -7,7 +7,7 @@ export default function NotificationsProvider({ children }) {
   const [state, setState] = useState({ data: null, error: '' }),
     [revision, setRevision] = useState(0);
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
-  const enabled = user?.role === 'admin';
+  const enabled = ['admin', 'moderator'].includes(user?.role);
   useEffect(() => {
     if (!enabled || !token) return;
     const controller = new AbortController();

@@ -24,6 +24,10 @@ export const verifyToken = async (req, res, next) => {
       .json({ success: false, message: 'Invalid or expired session. Please sign in again.' });
   }
 };
+export const isStaff = (req, res, next) =>
+  ['admin', 'moderator'].includes(req.user?.role)
+    ? next()
+    : res.status(403).json({ success: false, message: 'Staff access required.' });
 export const isAdmin = (req, res, next) =>
   req.user?.role === 'admin'
     ? next()

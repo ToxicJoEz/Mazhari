@@ -29,7 +29,7 @@ const UserSchema = new mongoose.Schema(
     tokenVersion: { type: Number, default: 0 },
     role: {
       type: String,
-      enum: ['customer', 'admin'],
+      enum: ['customer', 'moderator', 'admin'],
       default: 'customer',
     },
     isBanned: {

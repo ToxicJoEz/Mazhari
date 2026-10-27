@@ -23,7 +23,7 @@ export const getOverviewMetrics = async (req, res) => {
   const [totalOrders, customers, pendingRequests, lowStock, cash, pending, unconfigured] =
     await Promise.all([
       Order.countDocuments(),
-      User.countDocuments({ role: 'customer', isDeleted: false }),
+      User.countDocuments({ role: { $in: ['customer', 'moderator'] }, isDeleted: false }),
       PasswordResetRequest.countDocuments({ status: 'pending' }),
       Product.countDocuments({
         isDeleted: false,
@@ -61,6 +61,9 @@ export const getAllUsers = async (req, res) => {
   }
   if (req.query.status === 'banned') q.isBanned = true;
   if (req.query.status === 'deleted') q.isDeleted = true;
+  if (req.query.role && ['customer', 'moderator', 'admin'].includes(req.query.role)) {
+    q.role = req.query.role;
+  }
   const [users, total] = await Promise.all([
     User.find(q)
       .select('-password -tokenVersion')
@@ -70,6 +73,33 @@ export const getAllUsers = async (req, res) => {
     User.countDocuments(q),
   ]);
   res.json({ success: true, users, total, page, pages: Math.ceil(total / limit) });
+};
+export const createUser = async (req, res) => {
+  const body = req.body || {};
+  const name = v.text(body.name, 'name', 100);
+  const email = v.email(body.email);
+  const mobile = v.phone(body.mobile);
+  const password = v.password(body.password);
+  let role = body.role || 'customer';
+  if (role === 'mod') role = 'moderator';
+  if (!['customer', 'moderator', 'admin'].includes(role)) {
+    v.fail(400, 'Invalid account tier. Choose Customer, Moderator, or Administrator.');
+  }
+  if (await User.exists({ email })) {
+    v.fail(409, 'An account with this email address already exists.');
+  }
+  const user = await User.create({
+    name,
+    email,
+    mobile,
+    password,
+    role,
+  });
+  res.status(201).json({
+    success: true,
+    message: `${role === 'admin' ? 'Administrator' : role === 'moderator' ? 'Moderator' : 'Customer'} account created successfully.`,
+    user: publicUser(user),
+  });
 };
 export const getUserById = async (req, res) => {
   const user = await userById(req.params.id);
@@ -90,8 +120,28 @@ export const updateUser = async (req, res) => {
   customerOnly(user);
   if (req.body.name !== undefined) user.name = v.text(req.body.name, 'name', 100);
   if (req.body.mobile !== undefined) user.mobile = v.phone(req.body.mobile);
+  if (req.body.email !== undefined) {
+    const newEmail = v.email(req.body.email);
+    if (newEmail !== user.email) {
+      if (await User.exists({ email: newEmail, _id: { $ne: user._id } })) {
+        v.fail(409, 'An account with this email address already exists.');
+      }
+      user.email = newEmail;
+    }
+  }
+  if (req.body.role !== undefined) {
+    let newRole = req.body.role;
+    if (newRole === 'mod') newRole = 'moderator';
+    if (!['customer', 'moderator', 'admin'].includes(newRole)) {
+      v.fail(400, 'Invalid account tier. Choose Customer, Moderator, or Administrator.');
+    }
+    if (user.role !== newRole) {
+      user.role = newRole;
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
+    }
+  }
   await user.save();
-  res.json({ success: true, user: publicUser(user) });
+  res.json({ success: true, user: publicUser(user), message: 'Account updated.' });
 };
 const setAccount = async (req, res, operation) => {
   const user = await userById(req.params.id);

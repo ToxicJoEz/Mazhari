@@ -767,14 +767,19 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
     onUpdated?.();
   });
   return (
-    <Modal title="Customer details" onClose={onClose}>
+    <Modal title="Account details & tier" onClose={onClose}>
       <Status {...r} retry={r.refresh} />
       {r.data && (
         <>
-          <h3>{r.data.user.name}</h3>
-          <p>
-            {r.data.user.email} · {r.data.user.mobile}
-          </p>
+          <div className="row between">
+            <div>
+              <h3>{r.data.user.name}</h3>
+              <p>
+                {r.data.user.email} · {r.data.user.mobile}
+              </p>
+            </div>
+            <span className={'badge role-' + r.data.user.role}>{label(r.data.user.role)}</span>
+          </div>
           {r.data.user.role !== 'admin' && (
             <>
               <form
@@ -788,21 +793,39 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
                         method: 'PUT',
                         body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))),
                       }),
-                    'Customer details saved.',
+                    'Account details saved.',
                   );
                 }}
               >
-                <h3>Edit customer details</h3>
+                <h3>Edit account details & tier</h3>
                 <label>
                   Name
                   <input name="name" required maxLength={100} defaultValue={r.data.user.name} />
                 </label>
                 <label>
+                  Email
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    maxLength={254}
+                    defaultValue={r.data.user.email}
+                  />
+                </label>
+                <label>
                   Mobile
                   <input name="mobile" type="tel" required defaultValue={r.data.user.mobile} />
                 </label>
+                <label>
+                  Account tier
+                  <Select name="role" defaultValue={r.data.user.role} aria-label="Account tier">
+                    <option value="customer">Customer (Storefront only)</option>
+                    <option value="moderator">Store Moderator (Products, Stock & Orders)</option>
+                    <option value="admin">Administrator (Full Access)</option>
+                  </Select>
+                </label>
                 <button className="btn secondary" disabled={action.busy}>
-                  Save customer details
+                  Save account details
                 </button>
               </form>
               <details className="panel space-top">
@@ -824,7 +847,7 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
                   }}
                 >
                   <p className="muted">
-                    Verify the customer using their registered contact details first. No automatic
+                    Verify the user using their registered contact details first. No automatic
                     message is sent.
                   </p>
                   <label>
@@ -839,7 +862,7 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
                     />
                   </label>
                   <label className="check">
-                    <input type="checkbox" required />I have verified the customer’s identity.
+                    <input type="checkbox" required />I have verified this account’s identity.
                   </label>
                   <button className="btn secondary" disabled={action.busy}>
                     Set temporary password
@@ -882,13 +905,90 @@ function CustomerDetail({ id, token, onClose, onUpdated }) {
     </Modal>
   );
 }
-function UsersPanel({ token }) {
+function CreateUserModal({ token, onClose, onCreated }) {
+  const a = useAction();
+  return (
+    <Modal title="Create new account" onClose={onClose}>
+      <form
+        className="stack"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const body = Object.fromEntries(new FormData(e.currentTarget));
+          const ok = await a.run(
+            () =>
+              apiRequest('/admin/users', {
+                token,
+                method: 'POST',
+                body: JSON.stringify(body),
+              }),
+            'Account created successfully.',
+          );
+          if (ok) onCreated();
+        }}
+      >
+        <p className="muted">Add an account to Mazhari and set their permissions tier.</p>
+        <div className="form-grid">
+          <label>
+            Full name
+            <input name="name" required maxLength={100} placeholder="e.g. Sarah Mansour" />
+          </label>
+          <label>
+            Mobile number
+            <input name="mobile" type="tel" required placeholder="e.g. +201000000000" />
+          </label>
+          <label className="span-2">
+            Email address
+            <input
+              name="email"
+              type="email"
+              required
+              maxLength={254}
+              placeholder="e.g. sarah@example.com"
+            />
+          </label>
+          <label className="span-2">
+            Initial password
+            <input
+              type="password"
+              name="password"
+              required
+              minLength={8}
+              maxLength={72}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+            />
+          </label>
+          <label className="span-2">
+            Account tier
+            <Select name="role" defaultValue="customer" aria-label="Account tier">
+              <option value="customer">Customer (Storefront only)</option>
+              <option value="moderator">Store Moderator (Products, Stock & Orders)</option>
+              <option value="admin">Administrator (Full Store Access)</option>
+            </Select>
+          </label>
+        </div>
+        <Notice {...a} />
+        <button className="btn align-start" disabled={a.busy}>
+          {a.busy ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+    </Modal>
+  );
+}
+
+function UsersPanel({ token, currentUser }) {
   const dialog = useDialog();
   const [query, setQuery] = useState(''),
+    [roleFilter, setRoleFilter] = useState(''),
     [page, setPage] = useState(1),
-    [selected, setSelected] = useState(null);
+    [selected, setSelected] = useState(null),
+    [creating, setCreating] = useState(false);
   const r = useResource(
-    '/admin/users?page=' + page + '&search=' + encodeURIComponent(query),
+    '/admin/users?page=' +
+      page +
+      '&search=' +
+      encodeURIComponent(query) +
+      (roleFilter ? '&role=' + encodeURIComponent(roleFilter) : ''),
     token,
   );
   const a = useAction(r.refresh);
@@ -902,9 +1002,12 @@ function UsersPanel({ token }) {
     <>
       <div className="admin-title">
         <div>
-          <span className="eyebrow">YOUR COMMUNITY</span>
-          <h1>Customers.</h1>
+          <span className="eyebrow">ACCESS & ACCOUNTS</span>
+          <h1>User management.</h1>
         </div>
+        <button className="btn" onClick={() => setCreating(true)}>
+          <Plus size={17} /> Add account
+        </button>
       </div>
       <SearchBar
         onSearch={(q) => {
@@ -912,7 +1015,21 @@ function UsersPanel({ token }) {
           setPage(1);
         }}
         placeholder="Name, email or mobile"
-      />
+      >
+        <Select
+          aria-label="Filter by account tier"
+          value={roleFilter}
+          onChange={(e) => {
+            setRoleFilter(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="">All tiers</option>
+          <option value="customer">Customers</option>
+          <option value="moderator">Moderators</option>
+          <option value="admin">Administrators</option>
+        </Select>
+      </SearchBar>
       <Notice {...a} />
       <Status {...r} retry={r.refresh} />
       {r.data?.users.length > 0 ? (
@@ -920,90 +1037,105 @@ function UsersPanel({ token }) {
           <table>
             <thead>
               <tr>
-                <th>Customer</th>
+                <th>Account</th>
+                <th>Tier</th>
                 <th>Contact</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {r.data.users.map((u) => (
-                <tr key={u._id}>
-                  <td>
-                    <strong>{u.name}</strong>
-                    <small>{label(u.role)}</small>
-                  </td>
-                  <td>
-                    {u.email}
-                    <small>{u.mobile}</small>
-                  </td>
-                  <td>{u.isDeleted ? 'Deleted' : u.isBanned ? 'Suspended' : 'Active'}</td>
-                  <td>
-                    <div className="row">
-                      <button className="text-link" onClick={() => setSelected(u._id)}>
-                        Details & orders
-                      </button>
-                      {u.role !== 'admin' && (
-                        <>
-                          {u.isBanned ? (
-                            <button
-                              className="text-link"
-                              disabled={a.busy}
-                              onClick={() => command(u, '/unban')}
-                            >
-                              Unban
-                            </button>
-                          ) : (
-                            <button
-                              className="text-link"
-                              disabled={a.busy}
-                              onClick={async () => {
-                                const reason = await dialog.prompt(
-                                  'Reason for suspending this account:',
-                                );
-                                if (reason) command(u, '/ban', 'PATCH', { reason });
-                              }}
-                            >
-                              Ban
-                            </button>
-                          )}
-                          {u.isDeleted ? (
-                            <button
-                              className="text-link"
-                              disabled={a.busy}
-                              onClick={() => command(u, '/restore')}
-                            >
-                              Restore
-                            </button>
-                          ) : (
-                            <button
-                              className="text-link danger"
-                              disabled={a.busy}
-                              onClick={async () => {
-                                if (
-                                  await dialog.confirm(
-                                    'Deactivate this customer account? It can be restored.',
+              {r.data.users.map((u) => {
+                const isSelf = u._id === currentUser?._id || u._id === currentUser?.id;
+                return (
+                  <tr key={u._id}>
+                    <td>
+                      <strong>{u.name}</strong>
+                      <small>{u.email}</small>
+                    </td>
+                    <td>
+                      <span className={'badge role-' + u.role}>{label(u.role)}</span>
+                    </td>
+                    <td>{u.mobile}</td>
+                    <td>{u.isDeleted ? 'Deleted' : u.isBanned ? 'Suspended' : 'Active'}</td>
+                    <td>
+                      <div className="row">
+                        <button className="text-link" onClick={() => setSelected(u._id)}>
+                          Edit & details
+                        </button>
+                        {!isSelf && u.role !== 'admin' && (
+                          <>
+                            {u.isBanned ? (
+                              <button
+                                className="text-link"
+                                disabled={a.busy}
+                                onClick={() => command(u, '/unban')}
+                              >
+                                Unban
+                              </button>
+                            ) : (
+                              <button
+                                className="text-link"
+                                disabled={a.busy}
+                                onClick={async () => {
+                                  const reason = await dialog.prompt(
+                                    'Reason for suspending this account:',
+                                  );
+                                  if (reason) command(u, '/ban', 'PATCH', { reason });
+                                }}
+                              >
+                                Ban
+                              </button>
+                            )}
+                            {u.isDeleted ? (
+                              <button
+                                className="text-link"
+                                disabled={a.busy}
+                                onClick={() => command(u, '/restore')}
+                              >
+                                Restore
+                              </button>
+                            ) : (
+                              <button
+                                className="text-link danger"
+                                disabled={a.busy}
+                                onClick={async () => {
+                                  if (
+                                    await dialog.confirm(
+                                      `Deactivate this ${u.role} account? It can be restored.`,
+                                    )
                                   )
-                                )
-                                  command(u, '', 'DELETE');
-                              }}
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                                    command(u, '', 'DELETE');
+                                }}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {isSelf && <small className="muted">(You)</small>}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       ) : (
-        !r.loading && !r.error && <Empty title="No customers match." />
+        !r.loading && !r.error && <Empty title="No accounts match." />
       )}
       <Pager page={page} pages={r.data?.pages} onChange={setPage} />
+      {creating && (
+        <CreateUserModal
+          token={token}
+          onClose={() => setCreating(false)}
+          onCreated={() => {
+            setCreating(false);
+            r.refresh();
+          }}
+        />
+      )}
       {selected && (
         <CustomerDetail
           id={selected}
@@ -1072,12 +1204,20 @@ function ResetDialog({ request, token, onClose, onSaved }) {
     </Modal>
   );
 }
-function Support({ token }) {
+function Support({ token, user }) {
   const [selected, setSelected] = useState(null);
   const [inboxStatus, setInboxStatus] = useState('new');
   const [inboxPage, setInboxPage] = useState(1);
-  const resets = useResource('/admin/password-requests?status=pending', token),
-    messages = useResource('/admin/inquiries?status=' + inboxStatus + '&page=' + inboxPage, token);
+  const isAdminUser = user?.role === 'admin';
+  const resets = useResource(
+    isAdminUser ? '/admin/password-requests?status=pending' : '',
+    token,
+    isAdminUser,
+  );
+  const messages = useResource(
+    '/admin/inquiries?status=' + inboxStatus + '&page=' + inboxPage,
+    token,
+  );
   const a = useAction(messages.refresh);
   return (
     <>
@@ -1087,26 +1227,28 @@ function Support({ token }) {
           <h1>Support inbox.</h1>
         </div>
       </div>
-      <section className="panel">
-        <h2>Password reset requests</h2>
-        <Status {...resets} retry={resets.refresh} />
-        {resets.data?.requests.map((request) => (
-          <div className="inbox-row" key={request._id}>
-            <div>
-              <strong>{request.email}</strong>
-              <p>{request.mobile}</p>
-              <small>{date(request.createdAt)}</small>
+      {isAdminUser && (
+        <section className="panel">
+          <h2>Password reset requests</h2>
+          <Status {...resets} retry={resets.refresh} />
+          {resets.data?.requests.map((request) => (
+            <div className="inbox-row" key={request._id}>
+              <div>
+                <strong>{request.email}</strong>
+                <p>{request.mobile}</p>
+                <small>{date(request.createdAt)}</small>
+              </div>
+              <button className="btn secondary" onClick={() => setSelected(request)}>
+                Verify & reset
+              </button>
             </div>
-            <button className="btn secondary" onClick={() => setSelected(request)}>
-              Verify & reset
-            </button>
-          </div>
-        ))}
-        {resets.data?.requests.length === 0 && (
-          <p className="muted">No pending password requests.</p>
-        )}
-      </section>
-      <section className="panel space-top">
+          ))}
+          {resets.data?.requests.length === 0 && (
+            <p className="muted">No pending password requests.</p>
+          )}
+        </section>
+      )}
+      <section className={'panel' + (isAdminUser ? ' space-top' : '')}>
         <div className="row between">
           <h2>Customer messages</h2>
           <Select
@@ -1446,10 +1588,10 @@ export default function Admin() {
       </div>
     );
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin')
+  if (!['admin', 'moderator'].includes(user.role))
     return (
       <div className="store-page">
-        <Empty title="Administrator access required.">
+        <Empty title="Staff access required.">
           <Link className="btn" to="/profile">
             My account
           </Link>
@@ -1461,7 +1603,7 @@ export default function Admin() {
     ['products', 'Products', Package],
     ['media', 'Media library', Package],
     ['orders', 'Orders', Package],
-    ['users', 'Customers', Users],
+    ...(user.role === 'admin' ? [['users', 'User management', Users]] : []),
     ['shipping', 'Delivery', Truck],
     ['support', 'Support inbox', Inbox],
     ['settings', 'Store settings', Settings],
@@ -1487,7 +1629,7 @@ export default function Admin() {
         <AdminOrderBell sidebar />
         <div className="admin-identity">
           <strong>{user.name}</strong>
-          <span>Administrator</span>
+          <span>{user.role === 'admin' ? 'Administrator' : 'Store Moderator'}</span>
           <Link to="/profile" className="text-link">
             My account
           </Link>
@@ -1512,9 +1654,13 @@ export default function Admin() {
         ) : section === 'orders' ? (
           <Orders token={token} />
         ) : section === 'users' ? (
-          <UsersPanel token={token} />
+          user.role === 'admin' ? (
+            <UsersPanel token={token} currentUser={user} />
+          ) : (
+            <Empty title="Administrator access required for user management." />
+          )
         ) : section === 'support' ? (
-          <Support token={token} />
+          <Support token={token} user={user} />
         ) : ['settings', 'shipping'].includes(section) ? (
           <StoreSettings key={section} token={token} shipping={section === 'shipping'} />
         ) : (

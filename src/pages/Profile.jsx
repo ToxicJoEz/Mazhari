@@ -75,12 +75,16 @@ function ProfileForms({ user, token, replaceSession, logout }) {
             <p>Check delivery progress and order history.</p>
           </div>
         </Link>
-        {user.role === 'admin' && (
+        {['admin', 'moderator'].includes(user.role) && (
           <Link to="/admin" className="panel">
             <Settings />
             <div>
-              <h2>Admin dashboard</h2>
-              <p>Manage your store, stock, orders and customers.</p>
+              <h2>{user.role === 'admin' ? 'Admin dashboard' : 'Staff dashboard'}</h2>
+              <p>
+                {user.role === 'admin'
+                  ? 'Manage your store, stock, orders and accounts.'
+                  : 'Manage store catalog, stock, and orders.'}
+              </p>
             </div>
           </Link>
         )}
@@ -218,7 +222,7 @@ function ProfileForms({ user, token, replaceSession, logout }) {
               Update password
             </button>
           </form>
-          {user.role !== 'admin' && (
+          {!['admin', 'moderator'].includes(user.role) && (
             <form
               className="panel stack danger-zone"
               onSubmit={async (e) => {
@@ -285,7 +289,9 @@ export default function Profile() {
           <p>
             {auth.user.role === 'admin'
               ? 'Administrator'
-              : 'Your personal details and orders, in one place.'}
+              : auth.user.role === 'moderator'
+                ? 'Store Moderator'
+                : 'Your personal details and orders, in one place.'}
           </p>
         </div>
         <button className="btn secondary" onClick={auth.logout}>
